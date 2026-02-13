@@ -1,0 +1,2088 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/.gitignore b/.gitignore
+index 524f0963bd1d8c6149eb6f2dc52a5fc50c7637ad..d2986fd31324b8e7f7002da4c79b91f66649536e 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1,24 +1,5 @@
+-# Compiled class file
+-*.class
+-
+-# Log file
++frontend/node_modules/
++frontend/dist/
++backend/**/target/
+ *.log
+-
+-# BlueJ files
+-*.ctxt
+-
+-# Mobile Tools for Java (J2ME)
+-.mtj.tmp/
+-
+-# Package Files #
+-*.jar
+-*.war
+-*.nar
+-*.ear
+-*.zip
+-*.tar.gz
+-*.rar
+-
+-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+-hs_err_pid*
+-replay_pid*
++.DS_Store
+diff --git a/README.md b/README.md
+index 5ecee8d2d1f642b3abc084158df19fdc8dac2e73..f45504bfb53034ff60b18618a7f22b947f708227 100644
+--- a/README.md
++++ b/README.md
+@@ -1,2 +1,157 @@
+-# MyHostelManagingWebsite
+-A hostel room management web application with React UI, Java Spring Boot microservices, and Oracle database.
++# Hostel Room Management (Phase 1 Starter)
++
++Production-ready starter template for a **Hostel Room Management** platform with:
++
++- **Frontend**: React + TypeScript + React Router
++- **Backend**: Java 17 + Spring Boot microservice (`auth-service`) in Maven multi-module setup
++- **Database**: Oracle XE (schema user: `HOSTEL_APP`)
++
++## Project Structure
++
++```text
++.
++├── frontend/
++├── backend/
++│   ├── pom.xml
++│   └── auth-service/
++├── db/
++│   └── 01_schema.sql
++└── README.md
++```
++
++## Functional Coverage (Phase 1)
++
++- Home page with welcome and company section + Home/Register/Login tabs.
++- Register choice page with:
++  - Register As User
++  - Register As Employee
++  - Register Your Hostel (Owner)
++- Role-specific registration forms with required defaults, field behavior, password policy, and success redirect.
++- Login page and placeholder dashboard with logout.
++- Backend REST APIs for registration and login.
++- Backend validation, password hashing (BCrypt), and username/email uniqueness.
++
++## Prerequisites
++
++- Node.js 20+
++- Java 17+
++- Maven 3.9+
++- Oracle XE / Oracle DB with accessible PDB/service
++
++## Database Setup
++
++Use the `HOSTEL_APP` schema and run:
++
++```bash
++sqlplus HOSTEL_APP/Hostel@123@//localhost:1521/XEPDB1 @db/01_schema.sql
++```
++
++> If your service name differs (example: `ORCLPDB1`), update the connect string accordingly.
++
++### DB connection reference
++
++- Host: `localhost`
++- Port: `1521`
++- Service Name: `XEPDB1` (or `ORCLPDB1` if your environment uses that)
++- Username: `HOSTEL_APP`
++- Password: `Hostel@123`
++
++## Backend Run
++
++```bash
++cd backend
++export ORACLE_URL='jdbc:oracle:thin:@//localhost:1521/XEPDB1'
++export ORACLE_USERNAME='HOSTEL_APP'
++export ORACLE_PASSWORD='Hostel@123'
++mvn -pl auth-service spring-boot:run
++```
++
++Service starts at `http://localhost:8080`.
++
++### Backend API Endpoints
++
++- `POST /api/auth/register/user`
++- `POST /api/auth/register/employee`
++- `POST /api/auth/register/owner`
++- `POST /api/auth/login`
++
++### Sample curl requests
++
++```bash
++curl -X POST http://localhost:8080/api/auth/register/user \
++  -H 'Content-Type: application/json' \
++  -d '{
++    "firstName":"Amit",
++    "surname":"Shah",
++    "email":"amit.user@example.com",
++    "nationality":"India",
++    "countryCode":"+91",
++    "mobileNumber":"9876543210",
++    "stateName":"Maharashtra",
++    "cityName":"Pune",
++    "idProofType":"AADHAR_CARD",
++    "idProofValue":"1234567890",
++    "username":"AmitShah",
++    "password":"Abcd@123",
++    "confirmPassword":"Abcd@123"
++  }'
++
++curl -X POST http://localhost:8080/api/auth/login \
++  -H 'Content-Type: application/json' \
++  -d '{"username":"AmitShah","password":"Abcd@123"}'
++```
++
++## Frontend Run
++
++```bash
++cd frontend
++npm install
++npm run dev
++```
++
++Frontend starts at `http://localhost:5173`.
++
++If backend is on a different host/port, set:
++
++```bash
++export VITE_API_BASE_URL='http://localhost:8080'
++```
++
++## Notes
++
++- Dropdown location values are currently hardcoded with placeholders for future DB-driven master-data integration.
++- Password policy enforced in both frontend and backend:
++  - exactly 8 chars
++  - at least 1 uppercase, 1 lowercase, 1 number, 1 special char
++- Passwords are stored using BCrypt hash.
++
++
++## Troubleshooting: "Failed to create PR"
++
++If GitHub shows **Failed to create PR**, verify these checks:
++
++1. Ensure your repository has a remote configured:
++   ```bash
++   git remote -v
++   ```
++   If empty, add your origin:
++   ```bash
++   git remote add origin <your-github-repo-url>
++   ```
++
++2. Ensure your feature branch is pushed:
++   ```bash
++   git push -u origin <your-branch-name>
++   ```
++
++3. Ensure your branch is ahead of target branch and has commits:
++   ```bash
++   git log --oneline origin/main..HEAD
++   ```
++
++4. Re-open PR URL directly:
++   ```text
++   https://github.com/<owner>/<repo>/compare/main...<your-branch-name>?expand=1
++   ```
++
++In this workspace, `git remote -v` was empty, which commonly causes PR creation failure until an origin is set and branch is pushed.
+diff --git a/backend/auth-service/pom.xml b/backend/auth-service/pom.xml
+new file mode 100644
+index 0000000000000000000000000000000000000000..d6b52e8c021542dc18b2aa3861dff2cfd617f7f4
+--- /dev/null
++++ b/backend/auth-service/pom.xml
+@@ -0,0 +1,59 @@
++<project xmlns="http://maven.apache.org/POM/4.0.0"
++         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
++         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
++    <modelVersion>4.0.0</modelVersion>
++
++    <parent>
++        <groupId>com.hostel</groupId>
++        <artifactId>hostel-backend</artifactId>
++        <version>1.0.0</version>
++        <relativePath>../pom.xml</relativePath>
++    </parent>
++
++    <artifactId>auth-service</artifactId>
++    <name>auth-service</name>
++    <description>Authentication and registration service</description>
++
++    <dependencies>
++        <dependency>
++            <groupId>org.springframework.boot</groupId>
++            <artifactId>spring-boot-starter-web</artifactId>
++        </dependency>
++        <dependency>
++            <groupId>org.springframework.boot</groupId>
++            <artifactId>spring-boot-starter-validation</artifactId>
++        </dependency>
++        <dependency>
++            <groupId>org.springframework.boot</groupId>
++            <artifactId>spring-boot-starter-data-jpa</artifactId>
++        </dependency>
++        <dependency>
++            <groupId>com.oracle.database.jdbc</groupId>
++            <artifactId>ojdbc11</artifactId>
++            <scope>runtime</scope>
++        </dependency>
++        <dependency>
++            <groupId>org.springframework.security</groupId>
++            <artifactId>spring-security-crypto</artifactId>
++        </dependency>
++        <dependency>
++            <groupId>org.projectlombok</groupId>
++            <artifactId>lombok</artifactId>
++            <optional>true</optional>
++        </dependency>
++        <dependency>
++            <groupId>org.springframework.boot</groupId>
++            <artifactId>spring-boot-starter-test</artifactId>
++            <scope>test</scope>
++        </dependency>
++    </dependencies>
++
++    <build>
++        <plugins>
++            <plugin>
++                <groupId>org.springframework.boot</groupId>
++                <artifactId>spring-boot-maven-plugin</artifactId>
++            </plugin>
++        </plugins>
++    </build>
++</project>
+diff --git a/backend/auth-service/src/main/java/com/hostel/auth/AuthServiceApplication.java b/backend/auth-service/src/main/java/com/hostel/auth/AuthServiceApplication.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..3fafbc2b996f9aeefa14543f27377b55e01d7ad1
+--- /dev/null
++++ b/backend/auth-service/src/main/java/com/hostel/auth/AuthServiceApplication.java
+@@ -0,0 +1,12 @@
++package com.hostel.auth;
++
++import org.springframework.boot.SpringApplication;
++import org.springframework.boot.autoconfigure.SpringBootApplication;
++
++@SpringBootApplication
++public class AuthServiceApplication {
++
++    public static void main(String[] args) {
++        SpringApplication.run(AuthServiceApplication.class, args);
++    }
++}
+diff --git a/backend/auth-service/src/main/java/com/hostel/auth/config/SecurityConfig.java b/backend/auth-service/src/main/java/com/hostel/auth/config/SecurityConfig.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..dde98d1afdb03027456cdc68ee8f1b643c5ddeda
+--- /dev/null
++++ b/backend/auth-service/src/main/java/com/hostel/auth/config/SecurityConfig.java
+@@ -0,0 +1,15 @@
++package com.hostel.auth.config;
++
++import org.springframework.context.annotation.Bean;
++import org.springframework.context.annotation.Configuration;
++import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
++import org.springframework.security.crypto.password.PasswordEncoder;
++
++@Configuration
++public class SecurityConfig {
++
++    @Bean
++    public PasswordEncoder passwordEncoder() {
++        return new BCryptPasswordEncoder();
++    }
++}
+diff --git a/backend/auth-service/src/main/java/com/hostel/auth/controller/AuthController.java b/backend/auth-service/src/main/java/com/hostel/auth/controller/AuthController.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..40af3cba80b0dbc280152c339189154b668b904b
+--- /dev/null
++++ b/backend/auth-service/src/main/java/com/hostel/auth/controller/AuthController.java
+@@ -0,0 +1,39 @@
++package com.hostel.auth.controller;
++
++import com.hostel.auth.dto.*;
++import com.hostel.auth.service.AuthService;
++import jakarta.validation.Valid;
++import org.springframework.http.ResponseEntity;
++import org.springframework.web.bind.annotation.*;
++
++@RestController
++@RequestMapping("/api/auth")
++@CrossOrigin(origins = "*")
++public class AuthController {
++
++    private final AuthService authService;
++
++    public AuthController(AuthService authService) {
++        this.authService = authService;
++    }
++
++    @PostMapping("/register/user")
++    public ResponseEntity<RegisterResponse> registerUser(@Valid @RequestBody RegisterUserRequest request) {
++        return ResponseEntity.ok(authService.registerUser(request));
++    }
++
++    @PostMapping("/register/employee")
++    public ResponseEntity<RegisterResponse> registerEmployee(@Valid @RequestBody RegisterEmployeeRequest request) {
++        return ResponseEntity.ok(authService.registerEmployee(request));
++    }
++
++    @PostMapping("/register/owner")
++    public ResponseEntity<RegisterResponse> registerOwner(@Valid @RequestBody RegisterOwnerRequest request) {
++        return ResponseEntity.ok(authService.registerOwner(request));
++    }
++
++    @PostMapping("/login")
++    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
++        return ResponseEntity.ok(authService.login(request));
++    }
++}
+diff --git a/backend/auth-service/src/main/java/com/hostel/auth/dto/AuthResponse.java b/backend/auth-service/src/main/java/com/hostel/auth/dto/AuthResponse.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..850d327e900cfc506e903d2131b7bd8ff9d30eae
+--- /dev/null
++++ b/backend/auth-service/src/main/java/com/hostel/auth/dto/AuthResponse.java
+@@ -0,0 +1,14 @@
++package com.hostel.auth.dto;
++
++public class AuthResponse {
++    private final String message;
++    private final String token;
++
++    public AuthResponse(String message, String token) {
++        this.message = message;
++        this.token = token;
++    }
++
++    public String getMessage() { return message; }
++    public String getToken() { return token; }
++}
+diff --git a/backend/auth-service/src/main/java/com/hostel/auth/dto/BaseRegistrationRequest.java b/backend/auth-service/src/main/java/com/hostel/auth/dto/BaseRegistrationRequest.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..dfc7a37d06220aa17180058d92dd03be7185bde9
+--- /dev/null
++++ b/backend/auth-service/src/main/java/com/hostel/auth/dto/BaseRegistrationRequest.java
+@@ -0,0 +1,100 @@
++package com.hostel.auth.dto;
++
++import com.hostel.auth.entity.Gender;
++import com.hostel.auth.entity.IdProofType;
++import jakarta.validation.constraints.Email;
++import jakarta.validation.constraints.NotBlank;
++import jakarta.validation.constraints.NotNull;
++import jakarta.validation.constraints.Pattern;
++import jakarta.validation.constraints.Size;
++
++public class BaseRegistrationRequest {
++
++    @NotBlank
++    @Size(max = 50)
++    private String firstName;
++
++    @Size(max = 50)
++    private String middleName;
++
++    @Size(max = 50)
++    private String surname;
++
++    private Gender gender;
++
++    @NotBlank
++    @Email
++    @Size(max = 120)
++    private String email;
++
++    @NotBlank
++    @Size(max = 50)
++    private String nationality;
++
++    @NotBlank
++    @Size(max = 10)
++    private String countryCode;
++
++    @NotBlank
++    @Size(max = 20)
++    private String mobileNumber;
++
++    @NotBlank
++    @Size(max = 50)
++    private String stateName;
++
++    @NotBlank
++    @Size(max = 50)
++    private String cityName;
++
++    @NotNull
++    private IdProofType idProofType;
++
++    @NotBlank
++    @Size(max = 50)
++    private String idProofValue;
++
++    @NotBlank
++    @Size(max = 10)
++    @Pattern(regexp = "^[A-Za-z0-9]+$", message = "username must be alphanumeric")
++    private String username;
++
++    @NotBlank
++    @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{8}$",
++        message = "password must be exactly 8 chars with upper, lower, number and special")
++    private String password;
++
++    @NotBlank
++    private String confirmPassword;
++
++    public String getFirstName() { return firstName; }
++    public void setFirstName(String firstName) { this.firstName = firstName; }
++    public String getMiddleName() { return middleName; }
++    public void setMiddleName(String middleName) { this.middleName = middleName; }
++    public String getSurname() { return surname; }
++    public void setSurname(String surname) { this.surname = surname; }
++    public Gender getGender() { return gender; }
++    public void setGender(Gender gender) { this.gender = gender; }
++    public String getEmail() { return email; }
++    public void setEmail(String email) { this.email = email; }
++    public String getNationality() { return nationality; }
++    public void setNationality(String nationality) { this.nationality = nationality; }
++    public String getCountryCode() { return countryCode; }
++    public void setCountryCode(String countryCode) { this.countryCode = countryCode; }
++    public String getMobileNumber() { return mobileNumber; }
++    public void setMobileNumber(String mobileNumber) { this.mobileNumber = mobileNumber; }
++    public String getStateName() { return stateName; }
++    public void setStateName(String stateName) { this.stateName = stateName; }
++    public String getCityName() { return cityName; }
++    public void setCityName(String cityName) { this.cityName = cityName; }
++    public IdProofType getIdProofType() { return idProofType; }
++    public void setIdProofType(IdProofType idProofType) { this.idProofType = idProofType; }
++    public String getIdProofValue() { return idProofValue; }
++    public void setIdProofValue(String idProofValue) { this.idProofValue = idProofValue; }
++    public String getUsername() { return username; }
++    public void setUsername(String username) { this.username = username; }
++    public String getPassword() { return password; }
++    public void setPassword(String password) { this.password = password; }
++    public String getConfirmPassword() { return confirmPassword; }
++    public void setConfirmPassword(String confirmPassword) { this.confirmPassword = confirmPassword; }
++}
+diff --git a/backend/auth-service/src/main/java/com/hostel/auth/dto/LoginRequest.java b/backend/auth-service/src/main/java/com/hostel/auth/dto/LoginRequest.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..e33d475a2db292f0cf575eb50e17ec9c3ab93d45
+--- /dev/null
++++ b/backend/auth-service/src/main/java/com/hostel/auth/dto/LoginRequest.java
+@@ -0,0 +1,17 @@
++package com.hostel.auth.dto;
++
++import jakarta.validation.constraints.NotBlank;
++
++public class LoginRequest {
++
++    @NotBlank
++    private String username;
++
++    @NotBlank
++    private String password;
++
++    public String getUsername() { return username; }
++    public void setUsername(String username) { this.username = username; }
++    public String getPassword() { return password; }
++    public void setPassword(String password) { this.password = password; }
++}
+diff --git a/backend/auth-service/src/main/java/com/hostel/auth/dto/RegisterEmployeeRequest.java b/backend/auth-service/src/main/java/com/hostel/auth/dto/RegisterEmployeeRequest.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..5d11c653746b976c7cd40990f70e803bf4f782b3
+--- /dev/null
++++ b/backend/auth-service/src/main/java/com/hostel/auth/dto/RegisterEmployeeRequest.java
+@@ -0,0 +1,26 @@
++package com.hostel.auth.dto;
++
++import jakarta.validation.constraints.NotBlank;
++import jakarta.validation.constraints.Size;
++
++public class RegisterEmployeeRequest extends BaseRegistrationRequest {
++
++    @NotBlank
++    @Size(max = 60)
++    private String permanentAddress;
++
++    @NotBlank
++    @Size(max = 60)
++    private String currentAddress;
++
++    @NotBlank
++    @Size(max = 30)
++    private String skill;
++
++    public String getPermanentAddress() { return permanentAddress; }
++    public void setPermanentAddress(String permanentAddress) { this.permanentAddress = permanentAddress; }
++    public String getCurrentAddress() { return currentAddress; }
++    public void setCurrentAddress(String currentAddress) { this.currentAddress = currentAddress; }
++    public String getSkill() { return skill; }
++    public void setSkill(String skill) { this.skill = skill; }
++}
+diff --git a/backend/auth-service/src/main/java/com/hostel/auth/dto/RegisterOwnerRequest.java b/backend/auth-service/src/main/java/com/hostel/auth/dto/RegisterOwnerRequest.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..24dc989d9f1ea3266b84d2b62fbf1259dfc90fe9
+--- /dev/null
++++ b/backend/auth-service/src/main/java/com/hostel/auth/dto/RegisterOwnerRequest.java
+@@ -0,0 +1,20 @@
++package com.hostel.auth.dto;
++
++import jakarta.validation.constraints.NotBlank;
++import jakarta.validation.constraints.Size;
++
++public class RegisterOwnerRequest extends BaseRegistrationRequest {
++
++    @NotBlank
++    @Size(max = 60)
++    private String permanentAddress;
++
++    @NotBlank
++    @Size(max = 60)
++    private String currentAddress;
++
++    public String getPermanentAddress() { return permanentAddress; }
++    public void setPermanentAddress(String permanentAddress) { this.permanentAddress = permanentAddress; }
++    public String getCurrentAddress() { return currentAddress; }
++    public void setCurrentAddress(String currentAddress) { this.currentAddress = currentAddress; }
++}
+diff --git a/backend/auth-service/src/main/java/com/hostel/auth/dto/RegisterResponse.java b/backend/auth-service/src/main/java/com/hostel/auth/dto/RegisterResponse.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..d955d5798f68c00eadb324ee2f7a39d192ec149c
+--- /dev/null
++++ b/backend/auth-service/src/main/java/com/hostel/auth/dto/RegisterResponse.java
+@@ -0,0 +1,15 @@
++package com.hostel.auth.dto;
++
++public class RegisterResponse {
++
++    private final String message;
++    private final String username;
++
++    public RegisterResponse(String message, String username) {
++        this.message = message;
++        this.username = username;
++    }
++
++    public String getMessage() { return message; }
++    public String getUsername() { return username; }
++}
+diff --git a/backend/auth-service/src/main/java/com/hostel/auth/dto/RegisterUserRequest.java b/backend/auth-service/src/main/java/com/hostel/auth/dto/RegisterUserRequest.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..2ad749ffb4a816c299c10834583db686cf6e99a0
+--- /dev/null
++++ b/backend/auth-service/src/main/java/com/hostel/auth/dto/RegisterUserRequest.java
+@@ -0,0 +1,12 @@
++package com.hostel.auth.dto;
++
++import jakarta.validation.constraints.Size;
++
++public class RegisterUserRequest extends BaseRegistrationRequest {
++
++    @Size(max = 60)
++    private String homeAddress;
++
++    public String getHomeAddress() { return homeAddress; }
++    public void setHomeAddress(String homeAddress) { this.homeAddress = homeAddress; }
++}
+diff --git a/backend/auth-service/src/main/java/com/hostel/auth/entity/AppUser.java b/backend/auth-service/src/main/java/com/hostel/auth/entity/AppUser.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..24a044a7c2f473baf8386a9b13160262a64e6b01
+--- /dev/null
++++ b/backend/auth-service/src/main/java/com/hostel/auth/entity/AppUser.java
+@@ -0,0 +1,112 @@
++package com.hostel.auth.entity;
++
++import jakarta.persistence.*;
++import java.time.OffsetDateTime;
++
++@Entity
++@Table(name = "APP_USER")
++public class AppUser {
++
++    @Id
++    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "app_user_seq")
++    @SequenceGenerator(name = "app_user_seq", sequenceName = "APP_USER_SEQ", allocationSize = 1)
++    private Long id;
++
++    @Enumerated(EnumType.STRING)
++    @Column(name = "ROLE", nullable = false, length = 20)
++    private UserRole role;
++
++    @Column(name = "FIRST_NAME", nullable = false, length = 50)
++    private String firstName;
++
++    @Column(name = "MIDDLE_NAME", length = 50)
++    private String middleName;
++
++    @Column(name = "SURNAME", length = 50)
++    private String surname;
++
++    @Enumerated(EnumType.STRING)
++    @Column(name = "GENDER", length = 20)
++    private Gender gender;
++
++    @Column(name = "EMAIL", nullable = false, unique = true, length = 120)
++    private String email;
++
++    @Column(name = "NATIONALITY", nullable = false, length = 50)
++    private String nationality;
++
++    @Column(name = "COUNTRY_CODE", nullable = false, length = 10)
++    private String countryCode;
++
++    @Column(name = "MOBILE_NUMBER", nullable = false, length = 20)
++    private String mobileNumber;
++
++    @Column(name = "STATE_NAME", nullable = false, length = 50)
++    private String stateName;
++
++    @Column(name = "CITY_NAME", nullable = false, length = 50)
++    private String cityName;
++
++    @Enumerated(EnumType.STRING)
++    @Column(name = "ID_PROOF_TYPE", nullable = false, length = 20)
++    private IdProofType idProofType;
++
++    @Column(name = "ID_PROOF_VALUE", nullable = false, length = 50)
++    private String idProofValue;
++
++    @Column(name = "USERNAME", nullable = false, unique = true, length = 30)
++    private String username;
++
++    @Column(name = "PASSWORD_HASH", nullable = false, length = 255)
++    private String passwordHash;
++
++    @Column(name = "CREATED_AT", nullable = false)
++    private OffsetDateTime createdAt;
++
++    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
++    private UserProfile userProfile;
++
++    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
++    private EmployeeProfile employeeProfile;
++
++    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
++    private OwnerProfile ownerProfile;
++
++    @PrePersist
++    public void onCreate() {
++        this.createdAt = OffsetDateTime.now();
++    }
++
++    public Long getId() { return id; }
++    public UserRole getRole() { return role; }
++    public void setRole(UserRole role) { this.role = role; }
++    public String getFirstName() { return firstName; }
++    public void setFirstName(String firstName) { this.firstName = firstName; }
++    public String getMiddleName() { return middleName; }
++    public void setMiddleName(String middleName) { this.middleName = middleName; }
++    public String getSurname() { return surname; }
++    public void setSurname(String surname) { this.surname = surname; }
++    public Gender getGender() { return gender; }
++    public void setGender(Gender gender) { this.gender = gender; }
++    public String getEmail() { return email; }
++    public void setEmail(String email) { this.email = email; }
++    public String getNationality() { return nationality; }
++    public void setNationality(String nationality) { this.nationality = nationality; }
++    public String getCountryCode() { return countryCode; }
++    public void setCountryCode(String countryCode) { this.countryCode = countryCode; }
++    public String getMobileNumber() { return mobileNumber; }
++    public void setMobileNumber(String mobileNumber) { this.mobileNumber = mobileNumber; }
++    public String getStateName() { return stateName; }
++    public void setStateName(String stateName) { this.stateName = stateName; }
++    public String getCityName() { return cityName; }
++    public void setCityName(String cityName) { this.cityName = cityName; }
++    public IdProofType getIdProofType() { return idProofType; }
++    public void setIdProofType(IdProofType idProofType) { this.idProofType = idProofType; }
++    public String getIdProofValue() { return idProofValue; }
++    public void setIdProofValue(String idProofValue) { this.idProofValue = idProofValue; }
++    public String getUsername() { return username; }
++    public void setUsername(String username) { this.username = username; }
++    public String getPasswordHash() { return passwordHash; }
++    public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
++    public OffsetDateTime getCreatedAt() { return createdAt; }
++}
+diff --git a/backend/auth-service/src/main/java/com/hostel/auth/entity/EmployeeProfile.java b/backend/auth-service/src/main/java/com/hostel/auth/entity/EmployeeProfile.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..08ba56e51b92b045a0874c5eb3e062b58c33f138
+--- /dev/null
++++ b/backend/auth-service/src/main/java/com/hostel/auth/entity/EmployeeProfile.java
+@@ -0,0 +1,31 @@
++package com.hostel.auth.entity;
++
++import jakarta.persistence.*;
++
++@Entity
++@Table(name = "EMPLOYEE_PROFILE")
++public class EmployeeProfile {
++
++    @Id
++    @Column(name = "USER_ID")
++    private Long userId;
++
++    @OneToOne
++    @MapsId
++    @JoinColumn(name = "USER_ID")
++    private AppUser user;
++
++    @Column(name = "PERMANENT_ADDRESS", nullable = false, length = 60)
++    private String permanentAddress;
++
++    @Column(name = "CURRENT_ADDRESS", nullable = false, length = 60)
++    private String currentAddress;
++
++    @Column(name = "SKILL", length = 30)
++    private String skill;
++
++    public void setUser(AppUser user) { this.user = user; }
++    public void setPermanentAddress(String permanentAddress) { this.permanentAddress = permanentAddress; }
++    public void setCurrentAddress(String currentAddress) { this.currentAddress = currentAddress; }
++    public void setSkill(String skill) { this.skill = skill; }
++}
+diff --git a/backend/auth-service/src/main/java/com/hostel/auth/entity/Gender.java b/backend/auth-service/src/main/java/com/hostel/auth/entity/Gender.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..83f879d7cc20126dc8b4765f01ec63e2915cfd76
+--- /dev/null
++++ b/backend/auth-service/src/main/java/com/hostel/auth/entity/Gender.java
+@@ -0,0 +1,7 @@
++package com.hostel.auth.entity;
++
++public enum Gender {
++    MALE,
++    FEMALE,
++    NOT_PREFERRED
++}
+diff --git a/backend/auth-service/src/main/java/com/hostel/auth/entity/IdProofType.java b/backend/auth-service/src/main/java/com/hostel/auth/entity/IdProofType.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..9041b9592548d70b1eab45718386940366623e1c
+--- /dev/null
++++ b/backend/auth-service/src/main/java/com/hostel/auth/entity/IdProofType.java
+@@ -0,0 +1,7 @@
++package com.hostel.auth.entity;
++
++public enum IdProofType {
++    AADHAR_CARD,
++    VOTER_ID,
++    PASSPORT
++}
+diff --git a/backend/auth-service/src/main/java/com/hostel/auth/entity/OwnerProfile.java b/backend/auth-service/src/main/java/com/hostel/auth/entity/OwnerProfile.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..af99910060e03259375333ad34dc38bc8b17587c
+--- /dev/null
++++ b/backend/auth-service/src/main/java/com/hostel/auth/entity/OwnerProfile.java
+@@ -0,0 +1,27 @@
++package com.hostel.auth.entity;
++
++import jakarta.persistence.*;
++
++@Entity
++@Table(name = "OWNER_PROFILE")
++public class OwnerProfile {
++
++    @Id
++    @Column(name = "USER_ID")
++    private Long userId;
++
++    @OneToOne
++    @MapsId
++    @JoinColumn(name = "USER_ID")
++    private AppUser user;
++
++    @Column(name = "PERMANENT_ADDRESS", nullable = false, length = 60)
++    private String permanentAddress;
++
++    @Column(name = "CURRENT_ADDRESS", nullable = false, length = 60)
++    private String currentAddress;
++
++    public void setUser(AppUser user) { this.user = user; }
++    public void setPermanentAddress(String permanentAddress) { this.permanentAddress = permanentAddress; }
++    public void setCurrentAddress(String currentAddress) { this.currentAddress = currentAddress; }
++}
+diff --git a/backend/auth-service/src/main/java/com/hostel/auth/entity/UserProfile.java b/backend/auth-service/src/main/java/com/hostel/auth/entity/UserProfile.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..2d66452582d66c7ac16f2896b73ad48c9d08dee3
+--- /dev/null
++++ b/backend/auth-service/src/main/java/com/hostel/auth/entity/UserProfile.java
+@@ -0,0 +1,23 @@
++package com.hostel.auth.entity;
++
++import jakarta.persistence.*;
++
++@Entity
++@Table(name = "USER_PROFILE")
++public class UserProfile {
++
++    @Id
++    @Column(name = "USER_ID")
++    private Long userId;
++
++    @OneToOne
++    @MapsId
++    @JoinColumn(name = "USER_ID")
++    private AppUser user;
++
++    @Column(name = "HOME_ADDRESS", length = 60)
++    private String homeAddress;
++
++    public void setUser(AppUser user) { this.user = user; }
++    public void setHomeAddress(String homeAddress) { this.homeAddress = homeAddress; }
++}
+diff --git a/backend/auth-service/src/main/java/com/hostel/auth/entity/UserRole.java b/backend/auth-service/src/main/java/com/hostel/auth/entity/UserRole.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..4c70ea4dbe6b206b3109fb00f82d0c9a4d19085e
+--- /dev/null
++++ b/backend/auth-service/src/main/java/com/hostel/auth/entity/UserRole.java
+@@ -0,0 +1,7 @@
++package com.hostel.auth.entity;
++
++public enum UserRole {
++    USER,
++    EMPLOYEE,
++    OWNER
++}
+diff --git a/backend/auth-service/src/main/java/com/hostel/auth/exception/BadRequestException.java b/backend/auth-service/src/main/java/com/hostel/auth/exception/BadRequestException.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..4d43376044f1f20b047348379cf064064bcec226
+--- /dev/null
++++ b/backend/auth-service/src/main/java/com/hostel/auth/exception/BadRequestException.java
+@@ -0,0 +1,7 @@
++package com.hostel.auth.exception;
++
++public class BadRequestException extends RuntimeException {
++    public BadRequestException(String message) {
++        super(message);
++    }
++}
+diff --git a/backend/auth-service/src/main/java/com/hostel/auth/exception/GlobalExceptionHandler.java b/backend/auth-service/src/main/java/com/hostel/auth/exception/GlobalExceptionHandler.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..ccc7022b23dafba953bb742a427aeb897748695d
+--- /dev/null
++++ b/backend/auth-service/src/main/java/com/hostel/auth/exception/GlobalExceptionHandler.java
+@@ -0,0 +1,47 @@
++package com.hostel.auth.exception;
++
++import java.time.OffsetDateTime;
++import java.util.Map;
++import java.util.stream.Collectors;
++import org.springframework.http.HttpStatus;
++import org.springframework.http.ResponseEntity;
++import org.springframework.validation.FieldError;
++import org.springframework.web.bind.MethodArgumentNotValidException;
++import org.springframework.web.bind.annotation.ExceptionHandler;
++import org.springframework.web.bind.annotation.RestControllerAdvice;
++
++@RestControllerAdvice
++public class GlobalExceptionHandler {
++
++    @ExceptionHandler(MethodArgumentNotValidException.class)
++    public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
++        String message = ex.getBindingResult().getFieldErrors().stream()
++            .map(FieldError::getDefaultMessage)
++            .collect(Collectors.joining("; "));
++        return error(HttpStatus.BAD_REQUEST, message);
++    }
++
++    @ExceptionHandler(BadRequestException.class)
++    public ResponseEntity<Map<String, Object>> handleBadRequest(BadRequestException ex) {
++        return error(HttpStatus.BAD_REQUEST, ex.getMessage());
++    }
++
++    @ExceptionHandler(ResourceConflictException.class)
++    public ResponseEntity<Map<String, Object>> handleConflict(ResourceConflictException ex) {
++        return error(HttpStatus.CONFLICT, ex.getMessage());
++    }
++
++    @ExceptionHandler(UnauthorizedException.class)
++    public ResponseEntity<Map<String, Object>> handleUnauthorized(UnauthorizedException ex) {
++        return error(HttpStatus.UNAUTHORIZED, ex.getMessage());
++    }
++
++    private ResponseEntity<Map<String, Object>> error(HttpStatus status, String message) {
++        return ResponseEntity.status(status).body(Map.of(
++            "timestamp", OffsetDateTime.now().toString(),
++            "status", status.value(),
++            "error", status.getReasonPhrase(),
++            "message", message
++        ));
++    }
++}
+diff --git a/backend/auth-service/src/main/java/com/hostel/auth/exception/ResourceConflictException.java b/backend/auth-service/src/main/java/com/hostel/auth/exception/ResourceConflictException.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..01eacb0c762aff66ba7cd755c34f91f0590f3652
+--- /dev/null
++++ b/backend/auth-service/src/main/java/com/hostel/auth/exception/ResourceConflictException.java
+@@ -0,0 +1,7 @@
++package com.hostel.auth.exception;
++
++public class ResourceConflictException extends RuntimeException {
++    public ResourceConflictException(String message) {
++        super(message);
++    }
++}
+diff --git a/backend/auth-service/src/main/java/com/hostel/auth/exception/UnauthorizedException.java b/backend/auth-service/src/main/java/com/hostel/auth/exception/UnauthorizedException.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..14949c2701957f9f0ac9a11dbd84cd24e0788f39
+--- /dev/null
++++ b/backend/auth-service/src/main/java/com/hostel/auth/exception/UnauthorizedException.java
+@@ -0,0 +1,7 @@
++package com.hostel.auth.exception;
++
++public class UnauthorizedException extends RuntimeException {
++    public UnauthorizedException(String message) {
++        super(message);
++    }
++}
+diff --git a/backend/auth-service/src/main/java/com/hostel/auth/repository/AppUserRepository.java b/backend/auth-service/src/main/java/com/hostel/auth/repository/AppUserRepository.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..7d386fb8fdd99c78a532a3cd4cb3dca53beab610
+--- /dev/null
++++ b/backend/auth-service/src/main/java/com/hostel/auth/repository/AppUserRepository.java
+@@ -0,0 +1,11 @@
++package com.hostel.auth.repository;
++
++import com.hostel.auth.entity.AppUser;
++import java.util.Optional;
++import org.springframework.data.jpa.repository.JpaRepository;
++
++public interface AppUserRepository extends JpaRepository<AppUser, Long> {
++    boolean existsByUsernameIgnoreCase(String username);
++    boolean existsByEmailIgnoreCase(String email);
++    Optional<AppUser> findByUsernameIgnoreCase(String username);
++}
+diff --git a/backend/auth-service/src/main/java/com/hostel/auth/repository/EmployeeProfileRepository.java b/backend/auth-service/src/main/java/com/hostel/auth/repository/EmployeeProfileRepository.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..fe7d84f5def8c3c52970b0fc5220a931f26a732f
+--- /dev/null
++++ b/backend/auth-service/src/main/java/com/hostel/auth/repository/EmployeeProfileRepository.java
+@@ -0,0 +1,7 @@
++package com.hostel.auth.repository;
++
++import com.hostel.auth.entity.EmployeeProfile;
++import org.springframework.data.jpa.repository.JpaRepository;
++
++public interface EmployeeProfileRepository extends JpaRepository<EmployeeProfile, Long> {
++}
+diff --git a/backend/auth-service/src/main/java/com/hostel/auth/repository/OwnerProfileRepository.java b/backend/auth-service/src/main/java/com/hostel/auth/repository/OwnerProfileRepository.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..802cdba534742ac8e6380585dca11ca1011a9762
+--- /dev/null
++++ b/backend/auth-service/src/main/java/com/hostel/auth/repository/OwnerProfileRepository.java
+@@ -0,0 +1,7 @@
++package com.hostel.auth.repository;
++
++import com.hostel.auth.entity.OwnerProfile;
++import org.springframework.data.jpa.repository.JpaRepository;
++
++public interface OwnerProfileRepository extends JpaRepository<OwnerProfile, Long> {
++}
+diff --git a/backend/auth-service/src/main/java/com/hostel/auth/repository/UserProfileRepository.java b/backend/auth-service/src/main/java/com/hostel/auth/repository/UserProfileRepository.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..21de9ec4fbfa82f511c3a2583372a58a89fe0404
+--- /dev/null
++++ b/backend/auth-service/src/main/java/com/hostel/auth/repository/UserProfileRepository.java
+@@ -0,0 +1,7 @@
++package com.hostel.auth.repository;
++
++import com.hostel.auth.entity.UserProfile;
++import org.springframework.data.jpa.repository.JpaRepository;
++
++public interface UserProfileRepository extends JpaRepository<UserProfile, Long> {
++}
+diff --git a/backend/auth-service/src/main/java/com/hostel/auth/service/AuthService.java b/backend/auth-service/src/main/java/com/hostel/auth/service/AuthService.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..9db836e510fa6dc336d95d1fa9b97c02bdda3ee1
+--- /dev/null
++++ b/backend/auth-service/src/main/java/com/hostel/auth/service/AuthService.java
+@@ -0,0 +1,147 @@
++package com.hostel.auth.service;
++
++import com.hostel.auth.dto.*;
++import com.hostel.auth.entity.*;
++import com.hostel.auth.exception.BadRequestException;
++import com.hostel.auth.exception.ResourceConflictException;
++import com.hostel.auth.exception.UnauthorizedException;
++import com.hostel.auth.repository.AppUserRepository;
++import com.hostel.auth.repository.EmployeeProfileRepository;
++import com.hostel.auth.repository.OwnerProfileRepository;
++import com.hostel.auth.repository.UserProfileRepository;
++import java.nio.charset.StandardCharsets;
++import java.util.Base64;
++import java.util.UUID;
++import org.springframework.security.crypto.password.PasswordEncoder;
++import org.springframework.stereotype.Service;
++import org.springframework.transaction.annotation.Transactional;
++
++@Service
++public class AuthService {
++
++    private final AppUserRepository appUserRepository;
++    private final PasswordEncoder passwordEncoder;
++    private final UserProfileRepository userProfileRepository;
++    private final EmployeeProfileRepository employeeProfileRepository;
++    private final OwnerProfileRepository ownerProfileRepository;
++
++    public AuthService(AppUserRepository appUserRepository, PasswordEncoder passwordEncoder,
++                       UserProfileRepository userProfileRepository,
++                       EmployeeProfileRepository employeeProfileRepository,
++                       OwnerProfileRepository ownerProfileRepository) {
++        this.appUserRepository = appUserRepository;
++        this.passwordEncoder = passwordEncoder;
++        this.userProfileRepository = userProfileRepository;
++        this.employeeProfileRepository = employeeProfileRepository;
++        this.ownerProfileRepository = ownerProfileRepository;
++    }
++
++    @Transactional
++    public RegisterResponse registerUser(RegisterUserRequest request) {
++        validatePasswordMatch(request.getPassword(), request.getConfirmPassword());
++        validateUsernameAndEmailUniqueness(request.getUsername(), request.getEmail());
++        validateIndianIdRule(request);
++
++        AppUser appUser = appUserRepository.save(baseUser(request, UserRole.USER));
++        UserProfile profile = new UserProfile();
++        profile.setUser(appUser);
++        profile.setHomeAddress(request.getHomeAddress());
++        userProfileRepository.save(profile);
++        return new RegisterResponse("Successfully Registered", appUser.getUsername());
++    }
++
++    @Transactional
++    public RegisterResponse registerEmployee(RegisterEmployeeRequest request) {
++        validatePasswordMatch(request.getPassword(), request.getConfirmPassword());
++        validateUsernameAndEmailUniqueness(request.getUsername(), request.getEmail());
++        validateIndianIdRule(request);
++        if (request.getGender() == null) {
++            throw new BadRequestException("gender is required");
++        }
++
++        AppUser appUser = appUserRepository.save(baseUser(request, UserRole.EMPLOYEE));
++        EmployeeProfile profile = new EmployeeProfile();
++        profile.setUser(appUser);
++        profile.setPermanentAddress(request.getPermanentAddress());
++        profile.setCurrentAddress(request.getCurrentAddress());
++        profile.setSkill(request.getSkill());
++        employeeProfileRepository.save(profile);
++        return new RegisterResponse("Successfully Registered", appUser.getUsername());
++    }
++
++    @Transactional
++    public RegisterResponse registerOwner(RegisterOwnerRequest request) {
++        validatePasswordMatch(request.getPassword(), request.getConfirmPassword());
++        validateUsernameAndEmailUniqueness(request.getUsername(), request.getEmail());
++        validateIndianIdRule(request);
++        if (request.getGender() == null) {
++            throw new BadRequestException("gender is required");
++        }
++
++        AppUser appUser = appUserRepository.save(baseUser(request, UserRole.OWNER));
++        OwnerProfile profile = new OwnerProfile();
++        profile.setUser(appUser);
++        profile.setPermanentAddress(request.getPermanentAddress());
++        profile.setCurrentAddress(request.getCurrentAddress());
++        ownerProfileRepository.save(profile);
++        return new RegisterResponse("Successfully Registered", appUser.getUsername());
++    }
++
++    public AuthResponse login(LoginRequest request) {
++        AppUser user = appUserRepository.findByUsernameIgnoreCase(request.getUsername())
++            .orElseThrow(() -> new UnauthorizedException("invalid username or password"));
++
++        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
++            throw new UnauthorizedException("invalid username or password");
++        }
++
++        String rawToken = user.getUsername() + ":" + user.getRole().name() + ":" + UUID.randomUUID();
++        String token = Base64.getEncoder().encodeToString(rawToken.getBytes(StandardCharsets.UTF_8));
++        return new AuthResponse("Login successful", token);
++    }
++
++    private AppUser baseUser(BaseRegistrationRequest request, UserRole role) {
++        AppUser appUser = new AppUser();
++        appUser.setRole(role);
++        appUser.setFirstName(request.getFirstName().trim());
++        appUser.setMiddleName(request.getMiddleName());
++        appUser.setSurname(request.getSurname());
++        appUser.setGender(request.getGender());
++        appUser.setEmail(request.getEmail().trim());
++        appUser.setNationality(request.getNationality().trim());
++        appUser.setCountryCode(request.getCountryCode().trim());
++        appUser.setMobileNumber(request.getMobileNumber().trim());
++        appUser.setStateName(request.getStateName().trim());
++        appUser.setCityName(request.getCityName().trim());
++        appUser.setIdProofType(request.getIdProofType());
++        appUser.setIdProofValue(request.getIdProofValue().trim());
++        appUser.setUsername(request.getUsername().trim());
++        appUser.setPasswordHash(passwordEncoder.encode(request.getPassword()));
++        return appUser;
++    }
++
++    private void validatePasswordMatch(String password, String confirmPassword) {
++        if (!password.equals(confirmPassword)) {
++            throw new BadRequestException("password and confirmPassword must match");
++        }
++    }
++
++    private void validateUsernameAndEmailUniqueness(String username, String email) {
++        if (appUserRepository.existsByUsernameIgnoreCase(username)) {
++            throw new ResourceConflictException("username already exists");
++        }
++        if (appUserRepository.existsByEmailIgnoreCase(email)) {
++            throw new ResourceConflictException("email already exists");
++        }
++    }
++
++    private void validateIndianIdRule(BaseRegistrationRequest request) {
++        boolean isIndia = "India".equalsIgnoreCase(request.getNationality());
++        if (!isIndia && request.getIdProofType() != IdProofType.PASSPORT) {
++            throw new BadRequestException("idProofType must be PASSPORT for non-Indian nationality");
++        }
++        if (isIndia && !request.getIdProofValue().matches("^[0-9]{1,10}$")) {
++            throw new BadRequestException("For India, idProofValue must contain up to 10 digits");
++        }
++    }
++}
+diff --git a/backend/auth-service/src/main/resources/application.yml b/backend/auth-service/src/main/resources/application.yml
+new file mode 100644
+index 0000000000000000000000000000000000000000..1f527095f0c65c124d782c42952fa8fc566b42ec
+--- /dev/null
++++ b/backend/auth-service/src/main/resources/application.yml
+@@ -0,0 +1,21 @@
++server:
++  port: 8080
++
++spring:
++  datasource:
++    url: ${ORACLE_URL:jdbc:oracle:thin:@//localhost:1521/XEPDB1}
++    username: ${ORACLE_USERNAME:HOSTEL_APP}
++    password: ${ORACLE_PASSWORD:Hostel@123}
++    driver-class-name: oracle.jdbc.OracleDriver
++  jpa:
++    hibernate:
++      ddl-auto: validate
++    properties:
++      hibernate:
++        dialect: org.hibernate.dialect.OracleDialect
++        format_sql: true
++    open-in-view: false
++
++logging:
++  level:
++    org.hibernate.SQL: info
+diff --git a/backend/auth-service/src/test/java/com/hostel/auth/AuthServiceApplicationTests.java b/backend/auth-service/src/test/java/com/hostel/auth/AuthServiceApplicationTests.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..8d05b4a2e6cc0ea20c33363cd24f9b601ef05549
+--- /dev/null
++++ b/backend/auth-service/src/test/java/com/hostel/auth/AuthServiceApplicationTests.java
+@@ -0,0 +1,10 @@
++package com.hostel.auth;
++
++import org.junit.jupiter.api.Test;
++
++class AuthServiceApplicationTests {
++
++    @Test
++    void contextLoads() {
++    }
++}
+diff --git a/backend/pom.xml b/backend/pom.xml
+new file mode 100644
+index 0000000000000000000000000000000000000000..b81934a7c140b4b1906eff2a6b2d48966ba6649b
+--- /dev/null
++++ b/backend/pom.xml
+@@ -0,0 +1,54 @@
++<project xmlns="http://maven.apache.org/POM/4.0.0"
++         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
++         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
++    <modelVersion>4.0.0</modelVersion>
++
++    <groupId>com.hostel</groupId>
++    <artifactId>hostel-backend</artifactId>
++    <version>1.0.0</version>
++    <packaging>pom</packaging>
++
++    <name>hostel-backend</name>
++    <description>Hostel room management backend microservices</description>
++
++    <modules>
++        <module>auth-service</module>
++    </modules>
++
++    <properties>
++        <java.version>17</java.version>
++        <spring-boot.version>3.3.4</spring-boot.version>
++    </properties>
++
++    <dependencyManagement>
++        <dependencies>
++            <dependency>
++                <groupId>org.springframework.boot</groupId>
++                <artifactId>spring-boot-dependencies</artifactId>
++                <version>${spring-boot.version}</version>
++                <type>pom</type>
++                <scope>import</scope>
++            </dependency>
++        </dependencies>
++    </dependencyManagement>
++
++    <build>
++        <pluginManagement>
++            <plugins>
++                <plugin>
++                    <groupId>org.springframework.boot</groupId>
++                    <artifactId>spring-boot-maven-plugin</artifactId>
++                    <version>${spring-boot.version}</version>
++                </plugin>
++                <plugin>
++                    <groupId>org.apache.maven.plugins</groupId>
++                    <artifactId>maven-compiler-plugin</artifactId>
++                    <version>3.13.0</version>
++                    <configuration>
++                        <release>${java.version}</release>
++                    </configuration>
++                </plugin>
++            </plugins>
++        </pluginManagement>
++    </build>
++</project>
+diff --git a/db/01_schema.sql b/db/01_schema.sql
+new file mode 100644
+index 0000000000000000000000000000000000000000..bf6d77b5067dd1f0a9d4a8c319d79cfe25355b69
+--- /dev/null
++++ b/db/01_schema.sql
+@@ -0,0 +1,76 @@
++-- Run using HOSTEL_APP user on Oracle XE
++
++CREATE TABLE APP_USER (
++    ID NUMBER PRIMARY KEY,
++    ROLE VARCHAR2(20) NOT NULL,
++    FIRST_NAME VARCHAR2(50) NOT NULL,
++    MIDDLE_NAME VARCHAR2(50),
++    SURNAME VARCHAR2(50),
++    GENDER VARCHAR2(20),
++    EMAIL VARCHAR2(120) NOT NULL,
++    NATIONALITY VARCHAR2(50) NOT NULL,
++    COUNTRY_CODE VARCHAR2(10) NOT NULL,
++    MOBILE_NUMBER VARCHAR2(20) NOT NULL,
++    STATE_NAME VARCHAR2(50) NOT NULL,
++    CITY_NAME VARCHAR2(50) NOT NULL,
++    ID_PROOF_TYPE VARCHAR2(20) NOT NULL,
++    ID_PROOF_VALUE VARCHAR2(50) NOT NULL,
++    USERNAME VARCHAR2(30) NOT NULL,
++    PASSWORD_HASH VARCHAR2(255) NOT NULL,
++    CREATED_AT TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
++    CONSTRAINT CK_APP_USER_ROLE CHECK (ROLE IN ('USER', 'EMPLOYEE', 'OWNER')),
++    CONSTRAINT CK_APP_USER_GENDER CHECK (GENDER IN ('MALE', 'FEMALE', 'NOT_PREFERRED')),
++    CONSTRAINT CK_APP_USER_ID_PROOF CHECK (ID_PROOF_TYPE IN ('AADHAR_CARD', 'VOTER_ID', 'PASSPORT')),
++    CONSTRAINT UQ_APP_USER_USERNAME UNIQUE (USERNAME),
++    CONSTRAINT UQ_APP_USER_EMAIL UNIQUE (EMAIL)
++);
++
++CREATE TABLE USER_PROFILE (
++    USER_ID NUMBER PRIMARY KEY,
++    HOME_ADDRESS VARCHAR2(60),
++    CONSTRAINT FK_USER_PROFILE_USER FOREIGN KEY (USER_ID) REFERENCES APP_USER(ID)
++);
++
++CREATE TABLE EMPLOYEE_PROFILE (
++    USER_ID NUMBER PRIMARY KEY,
++    PERMANENT_ADDRESS VARCHAR2(60) NOT NULL,
++    CURRENT_ADDRESS VARCHAR2(60) NOT NULL,
++    SKILL VARCHAR2(30) NOT NULL,
++    CONSTRAINT FK_EMPLOYEE_PROFILE_USER FOREIGN KEY (USER_ID) REFERENCES APP_USER(ID)
++);
++
++CREATE TABLE OWNER_PROFILE (
++    USER_ID NUMBER PRIMARY KEY,
++    PERMANENT_ADDRESS VARCHAR2(60) NOT NULL,
++    CURRENT_ADDRESS VARCHAR2(60) NOT NULL,
++    CONSTRAINT FK_OWNER_PROFILE_USER FOREIGN KEY (USER_ID) REFERENCES APP_USER(ID)
++);
++
++CREATE SEQUENCE APP_USER_SEQ START WITH 1 INCREMENT BY 1 NOCACHE NOCYCLE;
++
++-- Optional lookup placeholders for future DB-driven dropdowns
++CREATE TABLE COUNTRY_MASTER (
++    COUNTRY_NAME VARCHAR2(50) PRIMARY KEY,
++    COUNTRY_CODE VARCHAR2(10) NOT NULL
++);
++
++CREATE TABLE STATE_MASTER (
++    ID NUMBER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
++    COUNTRY_NAME VARCHAR2(50) NOT NULL,
++    STATE_NAME VARCHAR2(50) NOT NULL,
++    CONSTRAINT FK_STATE_COUNTRY FOREIGN KEY (COUNTRY_NAME) REFERENCES COUNTRY_MASTER(COUNTRY_NAME)
++);
++
++CREATE TABLE CITY_MASTER (
++    ID NUMBER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
++    STATE_ID NUMBER NOT NULL,
++    CITY_NAME VARCHAR2(50) NOT NULL,
++    CONSTRAINT FK_CITY_STATE FOREIGN KEY (STATE_ID) REFERENCES STATE_MASTER(ID)
++);
++
++INSERT INTO COUNTRY_MASTER (COUNTRY_NAME, COUNTRY_CODE) VALUES ('India', '+91');
++INSERT INTO STATE_MASTER (COUNTRY_NAME, STATE_NAME) VALUES ('India', 'Maharashtra');
++INSERT INTO CITY_MASTER (STATE_ID, CITY_NAME)
++SELECT ID, 'Pune' FROM STATE_MASTER WHERE STATE_NAME = 'Maharashtra' AND COUNTRY_NAME = 'India';
++
++COMMIT;
+diff --git a/frontend/index.html b/frontend/index.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..71167bb3d133600cddd407cba30667bb1a1c7ffa
+--- /dev/null
++++ b/frontend/index.html
+@@ -0,0 +1,12 @@
++<!doctype html>
++<html lang="en">
++  <head>
++    <meta charset="UTF-8" />
++    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
++    <title>Hostel Room Management</title>
++  </head>
++  <body>
++    <div id="root"></div>
++    <script type="module" src="/src/main.tsx"></script>
++  </body>
++</html>
+diff --git a/frontend/package.json b/frontend/package.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..d014d15c14bb723cc63bf0b1f938ef11ee8e5000
+--- /dev/null
++++ b/frontend/package.json
+@@ -0,0 +1,23 @@
++{
++  "name": "hostel-room-management-frontend",
++  "version": "1.0.0",
++  "private": true,
++  "type": "module",
++  "scripts": {
++    "dev": "vite",
++    "build": "tsc -b && vite build",
++    "preview": "vite preview"
++  },
++  "dependencies": {
++    "react": "^18.3.1",
++    "react-dom": "^18.3.1",
++    "react-router-dom": "^6.26.2"
++  },
++  "devDependencies": {
++    "@types/react": "^18.3.5",
++    "@types/react-dom": "^18.3.0",
++    "@vitejs/plugin-react": "^4.3.1",
++    "typescript": "^5.6.2",
++    "vite": "^5.4.8"
++  }
++}
+diff --git a/frontend/src/App.tsx b/frontend/src/App.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..a9ccbc292fb349a0e8f8e658e0d38fee461dc89a
+--- /dev/null
++++ b/frontend/src/App.tsx
+@@ -0,0 +1,23 @@
++import { Navigate, Route, Routes } from 'react-router-dom';
++import HomePage from './pages/HomePage';
++import RegisterChoicePage from './pages/RegisterChoicePage';
++import RegisterUserPage from './pages/RegisterUserPage';
++import RegisterEmployeePage from './pages/RegisterEmployeePage';
++import RegisterOwnerPage from './pages/RegisterOwnerPage';
++import LoginPage from './pages/LoginPage';
++import DashboardPage from './pages/DashboardPage';
++
++export default function App() {
++  return (
++    <Routes>
++      <Route path="/" element={<HomePage />} />
++      <Route path="/register" element={<RegisterChoicePage />} />
++      <Route path="/register/user" element={<RegisterUserPage />} />
++      <Route path="/register/employee" element={<RegisterEmployeePage />} />
++      <Route path="/register/owner" element={<RegisterOwnerPage />} />
++      <Route path="/login" element={<LoginPage />} />
++      <Route path="/dashboard" element={<DashboardPage />} />
++      <Route path="*" element={<Navigate to="/" replace />} />
++    </Routes>
++  );
++}
+diff --git a/frontend/src/api/authApi.ts b/frontend/src/api/authApi.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..7c3fed7ea2c231f0970ded21646448924a469053
+--- /dev/null
++++ b/frontend/src/api/authApi.ts
+@@ -0,0 +1,34 @@
++import { RegisterEmployeeRequest, RegisterOwnerRequest, RegisterUserRequest } from '../types/auth';
++
++const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
++
++async function post<T>(path: string, payload: unknown): Promise<T> {
++  const response = await fetch(`${API_BASE}${path}`, {
++    method: 'POST',
++    headers: { 'Content-Type': 'application/json' },
++    body: JSON.stringify(payload)
++  });
++
++  if (!response.ok) {
++    const errorBody = await response.json().catch(() => ({}));
++    throw new Error(errorBody.message ?? 'Request failed');
++  }
++
++  return response.json() as Promise<T>;
++}
++
++export function registerUser(payload: RegisterUserRequest) {
++  return post<{ message: string; username: string }>('/api/auth/register/user', payload);
++}
++
++export function registerEmployee(payload: RegisterEmployeeRequest) {
++  return post<{ message: string; username: string }>('/api/auth/register/employee', payload);
++}
++
++export function registerOwner(payload: RegisterOwnerRequest) {
++  return post<{ message: string; username: string }>('/api/auth/register/owner', payload);
++}
++
++export function login(payload: { username: string; password: string }) {
++  return post<{ message: string; token: string }>('/api/auth/login', payload);
++}
+diff --git a/frontend/src/components/NavTabs.tsx b/frontend/src/components/NavTabs.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..7a944ed4881e74b7f24fa70af39754e8f1358902
+--- /dev/null
++++ b/frontend/src/components/NavTabs.tsx
+@@ -0,0 +1,21 @@
++import { Link, useLocation } from 'react-router-dom';
++
++const tabs = [
++  { label: 'Home', to: '/' },
++  { label: 'Register', to: '/register' },
++  { label: 'Login', to: '/login' }
++];
++
++export default function NavTabs() {
++  const location = useLocation();
++
++  return (
++    <nav className="nav-tabs">
++      {tabs.map((tab) => (
++        <Link key={tab.to} to={tab.to} className={location.pathname === tab.to ? 'active' : ''}>
++          {tab.label}
++        </Link>
++      ))}
++    </nav>
++  );
++}
+diff --git a/frontend/src/components/PageLayout.tsx b/frontend/src/components/PageLayout.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..939d71fe9810d608d652756e4c6984f671ed2022
+--- /dev/null
++++ b/frontend/src/components/PageLayout.tsx
+@@ -0,0 +1,12 @@
++import { ReactNode } from 'react';
++import NavTabs from './NavTabs';
++
++export default function PageLayout({ title, children }: { title: string; children: ReactNode }) {
++  return (
++    <main className="container">
++      <h1>{title}</h1>
++      <NavTabs />
++      <section className="card">{children}</section>
++    </main>
++  );
++}
+diff --git a/frontend/src/constants/locationData.ts b/frontend/src/constants/locationData.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..56ccf6b179e67b5cfe5de85d5f3bdfe56e6445fd
+--- /dev/null
++++ b/frontend/src/constants/locationData.ts
+@@ -0,0 +1,20 @@
++export type LocationMaster = {
++  countryCode: string;
++  states: Record<string, string[]>;
++};
++
++// Placeholder for future DB-driven values.
++export const LOCATION_DATA: Record<string, LocationMaster> = {
++  India: {
++    countryCode: '+91',
++    states: {
++      Maharashtra: ['Pune', 'Mumbai', 'Nagpur']
++    }
++  },
++  Nepal: {
++    countryCode: '+977',
++    states: {
++      Bagmati: ['Kathmandu']
++    }
++  }
++};
+diff --git a/frontend/src/main.tsx b/frontend/src/main.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..cf4a0d396cc12d89c0d3e204276d419f4eba8aa8
+--- /dev/null
++++ b/frontend/src/main.tsx
+@@ -0,0 +1,13 @@
++import React from 'react';
++import ReactDOM from 'react-dom/client';
++import { BrowserRouter } from 'react-router-dom';
++import App from './App';
++import './styles.css';
++
++ReactDOM.createRoot(document.getElementById('root')!).render(
++  <React.StrictMode>
++    <BrowserRouter>
++      <App />
++    </BrowserRouter>
++  </React.StrictMode>
++);
+diff --git a/frontend/src/pages/DashboardPage.tsx b/frontend/src/pages/DashboardPage.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..a6608983c359a0ae82ef7235ec3c3e13e85895aa
+--- /dev/null
++++ b/frontend/src/pages/DashboardPage.tsx
+@@ -0,0 +1,21 @@
++import { useNavigate } from 'react-router-dom';
++import PageLayout from '../components/PageLayout';
++
++export default function DashboardPage() {
++  const navigate = useNavigate();
++
++  return (
++    <PageLayout title="Dashboard">
++      <p>Wait for next things to come up</p>
++      <button
++        type="button"
++        onClick={() => {
++          sessionStorage.removeItem('authToken');
++          navigate('/');
++        }}
++      >
++        Logout
++      </button>
++    </PageLayout>
++  );
++}
+diff --git a/frontend/src/pages/HomePage.tsx b/frontend/src/pages/HomePage.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..7581ed36ba46590b143223cf8159f37167b38737
+--- /dev/null
++++ b/frontend/src/pages/HomePage.tsx
+@@ -0,0 +1,18 @@
++import PageLayout from '../components/PageLayout';
++
++export default function HomePage() {
++  return (
++    <PageLayout title="Hostel Room Management">
++      <h2>Welcome</h2>
++      <p>
++        Find the right hostel quickly and manage hostel operations from a single platform. Our phase-1 release
++        supports role-based registration and login to help users, employees, and owners get started.
++      </p>
++      <h2>About the Company</h2>
++      <p>
++        We build practical property-management software focused on reliability, secure access, and clear workflows
++        for daily operations in accommodation businesses.
++      </p>
++    </PageLayout>
++  );
++}
+diff --git a/frontend/src/pages/LoginPage.tsx b/frontend/src/pages/LoginPage.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..b60730621051cabf9f5827b4ff8efb0e3b4d629f
+--- /dev/null
++++ b/frontend/src/pages/LoginPage.tsx
+@@ -0,0 +1,37 @@
++import { FormEvent, useState } from 'react';
++import { useNavigate } from 'react-router-dom';
++import PageLayout from '../components/PageLayout';
++import { login } from '../api/authApi';
++
++export default function LoginPage() {
++  const navigate = useNavigate();
++  const [username, setUsername] = useState('');
++  const [password, setPassword] = useState('');
++  const [error, setError] = useState('');
++
++  const submit = async (e: FormEvent) => {
++    e.preventDefault();
++    setError('');
++    try {
++      const response = await login({ username, password });
++      sessionStorage.setItem('authToken', response.token);
++      navigate('/dashboard');
++    } catch (err) {
++      setError((err as Error).message);
++    }
++  };
++
++  return (
++    <PageLayout title="Login">
++      <form onSubmit={submit} className="form-grid">
++        <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" required />
++        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" required />
++        <div className="button-row">
++          <button type="submit">Login</button>
++          <button type="button" onClick={() => navigate('/')}>Cancel</button>
++        </div>
++      </form>
++      {error && <p className="error">{error}</p>}
++    </PageLayout>
++  );
++}
+diff --git a/frontend/src/pages/RegisterChoicePage.tsx b/frontend/src/pages/RegisterChoicePage.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..1f8381b9d8c063ba2bc139b91cbdcb2fbe9a29df
+--- /dev/null
++++ b/frontend/src/pages/RegisterChoicePage.tsx
+@@ -0,0 +1,25 @@
++import { useNavigate } from 'react-router-dom';
++import PageLayout from '../components/PageLayout';
++
++export default function RegisterChoicePage() {
++  const navigate = useNavigate();
++  return (
++    <PageLayout title="Register">
++      <fieldset>
++        <legend>Select Registration Type</legend>
++        <label>
++          <input type="radio" name="registerType" onChange={() => navigate('/register/user')} /> Register As User
++        </label>
++        <label>
++          <input type="radio" name="registerType" onChange={() => navigate('/register/employee')} /> Register As
++          Employee
++        </label>
++        <label>
++          <input type="radio" name="registerType" onChange={() => navigate('/register/owner')} /> Register Your
++          Hostel (Owner)
++        </label>
++      </fieldset>
++      <button type="button" onClick={() => navigate('/')}>Home</button>
++    </PageLayout>
++  );
++}
+diff --git a/frontend/src/pages/RegisterEmployeePage.tsx b/frontend/src/pages/RegisterEmployeePage.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..9223b22aa0b907eb4f0062c1365d5549146ffce8
+--- /dev/null
++++ b/frontend/src/pages/RegisterEmployeePage.tsx
+@@ -0,0 +1,91 @@
++import { FormEvent, useMemo, useState } from 'react';
++import { useNavigate } from 'react-router-dom';
++import PageLayout from '../components/PageLayout';
++import { LOCATION_DATA } from '../constants/locationData';
++import { registerEmployee } from '../api/authApi';
++import { PASSWORD_RULE, suggestUsername } from '../utils/formUtils';
++
++export default function RegisterEmployeePage() {
++  const navigate = useNavigate();
++  const [sameAddress, setSameAddress] = useState(false);
++  const [form, setForm] = useState({
++    firstName: '', middleName: '', surname: '', gender: 'MALE', email: '', nationality: 'India', mobileNumber: '',
++    stateName: 'Maharashtra', cityName: 'Pune', idProofType: 'AADHAR_CARD', idProofValue: '', permanentAddress: '',
++    currentAddress: '', skill: 'Cleaning', username: '', password: '', confirmPassword: ''
++  });
++  const [msg, setMsg] = useState('');
++  const [error, setError] = useState('');
++
++  const usernameSuggestion = useMemo(() => suggestUsername(form.firstName, form.surname), [form.firstName, form.surname]);
++  const countryCode = LOCATION_DATA.India.countryCode;
++  const cityOptions = LOCATION_DATA.India.states[form.stateName] ?? ['Pune'];
++
++  const clear = () => {
++    setForm({
++      firstName: '', middleName: '', surname: '', gender: 'MALE', email: '', nationality: 'India', mobileNumber: '',
++      stateName: 'Maharashtra', cityName: 'Pune', idProofType: 'AADHAR_CARD', idProofValue: '', permanentAddress: '',
++      currentAddress: '', skill: 'Cleaning', username: '', password: '', confirmPassword: ''
++    });
++    setSameAddress(false);
++    setMsg('');
++    setError('');
++  };
++
++  const submit = async (e: FormEvent) => {
++    e.preventDefault();
++    setError('');
++    if (!PASSWORD_RULE.test(form.password)) return setError('Password policy failed.');
++    if (form.password !== form.confirmPassword) return setError('Confirm password must match.');
++
++    try {
++      const response = await registerEmployee({
++        ...form,
++        countryCode,
++        username: form.username || usernameSuggestion,
++        currentAddress: sameAddress ? form.permanentAddress : form.currentAddress,
++        idProofValue: form.idProofValue.replace(/\D/g, '')
++      });
++      setMsg(response.message);
++      setTimeout(() => navigate('/'), 1200);
++    } catch (err) {
++      setError((err as Error).message);
++    }
++  };
++
++  return (
++    <PageLayout title="Register As Employee">
++      <form onSubmit={submit} className="form-grid">
++        <input placeholder="Name" required value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
++        <input placeholder="Middle name" value={form.middleName} onChange={(e) => setForm({ ...form, middleName: e.target.value })} />
++        <input placeholder="Surname" value={form.surname} onChange={(e) => setForm({ ...form, surname: e.target.value })} />
++        <div>
++          Gender:
++          {['MALE', 'FEMALE', 'NOT_PREFERRED'].map((g) => (
++            <label key={g}><input type="radio" name="gender" checked={form.gender === g} onChange={() => setForm({ ...form, gender: g })} />{g}</label>
++          ))}
++        </div>
++        <input type="email" required placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
++        <input value={countryCode} readOnly />
++        <input required placeholder="Mobile" value={form.mobileNumber} onChange={(e) => setForm({ ...form, mobileNumber: e.target.value })} />
++        <select value={form.stateName} onChange={(e) => { const nextState = e.target.value; const nextCity = (LOCATION_DATA.India.states[nextState] ?? ['Pune'])[0]; setForm({ ...form, stateName: nextState, cityName: nextCity }); }}><option>Maharashtra</option></select>
++        <select value={form.cityName} onChange={(e) => setForm({ ...form, cityName: e.target.value })}>{cityOptions.map((c) => <option key={c}>{c}</option>)}</select>
++        <select value={form.idProofType} onChange={(e) => setForm({ ...form, idProofType: e.target.value })}>
++          <option value="AADHAR_CARD">Aadhar Card</option>
++          <option value="VOTER_ID">VoterID</option>
++          <option value="PASSPORT">Passport</option>
++        </select>
++        <input placeholder="ID Proof value" maxLength={10} value={form.idProofValue} onChange={(e) => setForm({ ...form, idProofValue: e.target.value.replace(/\D/g, '') })} />
++        <input placeholder="Permanent Address" maxLength={60} required value={form.permanentAddress} onChange={(e) => setForm({ ...form, permanentAddress: e.target.value })} />
++        <label><input type="checkbox" checked={sameAddress} onChange={(e) => setSameAddress(e.target.checked)} />Permanent Address same as Current Address</label>
++        <input placeholder="Current Address" maxLength={60} required value={sameAddress ? form.permanentAddress : form.currentAddress} disabled={sameAddress} onChange={(e) => setForm({ ...form, currentAddress: e.target.value })} />
++        <select value={form.skill} onChange={(e) => setForm({ ...form, skill: e.target.value })}><option>Cleaning</option><option>Management</option></select>
++        <input placeholder={`Username (suggested: ${usernameSuggestion})`} maxLength={10} value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value.replace(/[^A-Za-z0-9]/g, '') })} />
++        <input type="password" required placeholder="Password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
++        <input type="password" required placeholder="Confirm Password" value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} />
++        <div className="button-row"><button type="submit">Register</button><button type="button" onClick={clear}>Clear</button><button type="button" onClick={() => navigate('/')}>Cancel</button></div>
++      </form>
++      {msg && <p className="success">{msg}</p>}
++      {error && <p className="error">{error}</p>}
++    </PageLayout>
++  );
++}
+diff --git a/frontend/src/pages/RegisterOwnerPage.tsx b/frontend/src/pages/RegisterOwnerPage.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..3013463feaf4249c626e8788bc0c74b3a4064594
+--- /dev/null
++++ b/frontend/src/pages/RegisterOwnerPage.tsx
+@@ -0,0 +1,78 @@
++import { FormEvent, useMemo, useState } from 'react';
++import { useNavigate } from 'react-router-dom';
++import PageLayout from '../components/PageLayout';
++import { LOCATION_DATA } from '../constants/locationData';
++import { registerOwner } from '../api/authApi';
++import { PASSWORD_RULE, suggestUsername } from '../utils/formUtils';
++
++export default function RegisterOwnerPage() {
++  const navigate = useNavigate();
++  const [sameAddress, setSameAddress] = useState(false);
++  const [form, setForm] = useState({
++    firstName: '', middleName: '', surname: '', gender: 'MALE', email: '', nationality: 'India', mobileNumber: '',
++    stateName: 'Maharashtra', cityName: 'Pune', idProofType: 'AADHAR_CARD', idProofValue: '', permanentAddress: '',
++    currentAddress: '', username: '', password: '', confirmPassword: ''
++  });
++  const [msg, setMsg] = useState('');
++  const [error, setError] = useState('');
++  const usernameSuggestion = useMemo(() => suggestUsername(form.firstName, form.surname), [form.firstName, form.surname]);
++
++  const clear = () => {
++    setForm({
++      firstName: '', middleName: '', surname: '', gender: 'MALE', email: '', nationality: 'India', mobileNumber: '',
++      stateName: 'Maharashtra', cityName: 'Pune', idProofType: 'AADHAR_CARD', idProofValue: '', permanentAddress: '',
++      currentAddress: '', username: '', password: '', confirmPassword: ''
++    });
++    setSameAddress(false);
++    setMsg('');
++    setError('');
++  };
++
++  const submit = async (e: FormEvent) => {
++    e.preventDefault();
++    setError('');
++    if (!PASSWORD_RULE.test(form.password)) return setError('Password policy failed.');
++    if (form.password !== form.confirmPassword) return setError('Confirm password must match.');
++
++    try {
++      const response = await registerOwner({
++        ...form,
++        countryCode: LOCATION_DATA.India.countryCode,
++        username: form.username || usernameSuggestion,
++        currentAddress: sameAddress ? form.permanentAddress : form.currentAddress,
++        idProofValue: form.idProofValue.replace(/\D/g, '')
++      });
++      setMsg(response.message);
++      setTimeout(() => navigate('/'), 1200);
++    } catch (err) {
++      setError((err as Error).message);
++    }
++  };
++
++  return (
++    <PageLayout title="Register Your Hostel (Owner)">
++      <form onSubmit={submit} className="form-grid">
++        <input placeholder="Name" required value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
++        <input placeholder="Middle name" value={form.middleName} onChange={(e) => setForm({ ...form, middleName: e.target.value })} />
++        <input placeholder="Surname" value={form.surname} onChange={(e) => setForm({ ...form, surname: e.target.value })} />
++        <input type="email" required placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
++        <select value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}><option value="MALE">Male</option><option value="FEMALE">Female</option><option value="NOT_PREFERRED">NotPreferred</option></select>
++        <input value={LOCATION_DATA.India.countryCode} readOnly />
++        <input required placeholder="Mobile" value={form.mobileNumber} onChange={(e) => setForm({ ...form, mobileNumber: e.target.value })} />
++        <input value="Maharashtra" readOnly />
++        <input value="Pune" readOnly />
++        <select value={form.idProofType} onChange={(e) => setForm({ ...form, idProofType: e.target.value })}><option value="AADHAR_CARD">Aadhar Card</option><option value="VOTER_ID">VoterID</option><option value="PASSPORT">Passport</option></select>
++        <input placeholder="ID Proof value" maxLength={10} value={form.idProofValue} onChange={(e) => setForm({ ...form, idProofValue: e.target.value.replace(/\D/g, '') })} />
++        <input placeholder="Permanent Address" maxLength={60} required value={form.permanentAddress} onChange={(e) => setForm({ ...form, permanentAddress: e.target.value })} />
++        <label><input type="checkbox" checked={sameAddress} onChange={(e) => setSameAddress(e.target.checked)} />Permanent Address same as Current Address</label>
++        <input placeholder="Current Address" maxLength={60} required value={sameAddress ? form.permanentAddress : form.currentAddress} disabled={sameAddress} onChange={(e) => setForm({ ...form, currentAddress: e.target.value })} />
++        <input placeholder={`Username (suggested: ${usernameSuggestion})`} maxLength={10} value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value.replace(/[^A-Za-z0-9]/g, '') })} />
++        <input type="password" required placeholder="Password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
++        <input type="password" required placeholder="Confirm Password" value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} />
++        <div className="button-row"><button type="submit">Register</button><button type="button" onClick={clear}>Clear</button><button type="button" onClick={() => navigate('/')}>Cancel</button></div>
++      </form>
++      {msg && <p className="success">{msg}</p>}
++      {error && <p className="error">{error}</p>}
++    </PageLayout>
++  );
++}
+diff --git a/frontend/src/pages/RegisterUserPage.tsx b/frontend/src/pages/RegisterUserPage.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..5600eb84ca1c2f4528b20065f4d36bc43d01d27a
+--- /dev/null
++++ b/frontend/src/pages/RegisterUserPage.tsx
+@@ -0,0 +1,114 @@
++import { FormEvent, useMemo, useState } from 'react';
++import { useNavigate } from 'react-router-dom';
++import PageLayout from '../components/PageLayout';
++import { LOCATION_DATA } from '../constants/locationData';
++import { registerUser } from '../api/authApi';
++import { PASSWORD_RULE, suggestUsername } from '../utils/formUtils';
++
++const defaultNationality = 'India';
++const defaultState = 'Maharashtra';
++const defaultCity = 'Pune';
++
++export default function RegisterUserPage() {
++  const navigate = useNavigate();
++  const [form, setForm] = useState({
++    firstName: '',
++    middleName: '',
++    surname: '',
++    email: '',
++    nationality: defaultNationality,
++    mobileNumber: '',
++    stateName: defaultState,
++    cityName: defaultCity,
++    idProofType: 'AADHAR_CARD',
++    idProofValue: '',
++    username: '',
++    password: '',
++    confirmPassword: ''
++  });
++  const [message, setMessage] = useState('');
++  const [error, setError] = useState('');
++
++  const countryCode = LOCATION_DATA[form.nationality]?.countryCode ?? '+00';
++  const states = Object.keys(LOCATION_DATA[form.nationality]?.states ?? { Other: ['NA'] });
++  const cities = LOCATION_DATA[form.nationality]?.states[form.stateName] ?? ['NA'];
++  const isIndia = form.nationality === 'India';
++
++  const usernameSuggestion = useMemo(() => suggestUsername(form.firstName, form.surname), [form.firstName, form.surname]);
++
++  const applyDefaults = () => {
++    setForm({
++      firstName: '', middleName: '', surname: '', email: '', nationality: defaultNationality, mobileNumber: '',
++      stateName: defaultState, cityName: defaultCity, idProofType: 'AADHAR_CARD', idProofValue: '', username: '',
++      password: '', confirmPassword: ''
++    });
++    setError('');
++    setMessage('');
++  };
++
++  const submit = async (e: FormEvent) => {
++    e.preventDefault();
++    setError('');
++    if (!PASSWORD_RULE.test(form.password)) return setError('Password policy failed.');
++    if (form.password !== form.confirmPassword) return setError('Confirm password must match.');
++
++    try {
++      const payload = {
++        firstName: form.firstName,
++        middleName: form.middleName,
++        surname: form.surname,
++        email: form.email,
++        nationality: form.nationality,
++        countryCode,
++        mobileNumber: form.mobileNumber,
++        stateName: form.stateName,
++        cityName: form.cityName,
++        idProofType: (isIndia ? form.idProofType : 'PASSPORT') as 'AADHAR_CARD' | 'VOTER_ID' | 'PASSPORT',
++        idProofValue: form.idProofValue,
++        username: form.username || usernameSuggestion,
++        password: form.password,
++        confirmPassword: form.confirmPassword
++      };
++      const response = await registerUser(payload);
++      setMessage(response.message);
++      setTimeout(() => navigate('/'), 1200);
++    } catch (err) {
++      setError((err as Error).message);
++    }
++  };
++
++  return (
++    <PageLayout title="Register As User">
++      <form onSubmit={submit} className="form-grid">
++        <input placeholder="Name" required value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
++        <input placeholder="Surname" value={form.surname} onChange={(e) => setForm({ ...form, surname: e.target.value })} />
++        <input type="email" placeholder="Email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
++        <select value={form.nationality} onChange={(e) => setForm({ ...form, nationality: e.target.value, stateName: defaultState, cityName: defaultCity })}>
++          {Object.keys(LOCATION_DATA).map((c) => <option key={c}>{c}</option>)}
++        </select>
++        <input value={countryCode} readOnly />
++        <input placeholder="Mobile" required value={form.mobileNumber} onChange={(e) => setForm({ ...form, mobileNumber: e.target.value })} />
++        <select value={form.stateName} onChange={(e) => setForm({ ...form, stateName: e.target.value, cityName: (LOCATION_DATA[form.nationality]?.states[e.target.value] ?? [''])[0] })}>{states.map((s) => <option key={s}>{s}</option>)}</select>
++        <select value={form.cityName} onChange={(e) => setForm({ ...form, cityName: e.target.value })}>{cities.map((c) => <option key={c}>{c}</option>)}</select>
++        {isIndia ? (
++          <select value={form.idProofType} onChange={(e) => setForm({ ...form, idProofType: e.target.value })}>
++            <option value="AADHAR_CARD">Aadhar Card</option>
++            <option value="VOTER_ID">VoterID</option>
++            <option value="PASSPORT">Passport</option>
++          </select>
++        ) : <input value="Passport" readOnly />}
++        <input placeholder="ID Proof Value" maxLength={10} value={form.idProofValue} onChange={(e) => setForm({ ...form, idProofValue: isIndia ? e.target.value.replace(/\D/g, '') : e.target.value })} />
++        <input placeholder={`Username (suggested: ${usernameSuggestion})`} maxLength={10} value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value.replace(/[^A-Za-z0-9]/g, '') })} />
++        <input type="password" placeholder="Password" required value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
++        <input type="password" placeholder="Confirm Password" required value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} />
++        <div className="button-row">
++          <button type="submit">Register</button>
++          <button type="button" onClick={applyDefaults}>Clear</button>
++          <button type="button" onClick={() => navigate('/')}>Cancel</button>
++        </div>
++      </form>
++      {message && <p className="success">{message}</p>}
++      {error && <p className="error">{error}</p>}
++    </PageLayout>
++  );
++}
+diff --git a/frontend/src/styles.css b/frontend/src/styles.css
+new file mode 100644
+index 0000000000000000000000000000000000000000..89e636abee7f311f40745d7e3ab7309b8309be33
+--- /dev/null
++++ b/frontend/src/styles.css
+@@ -0,0 +1,13 @@
++body { font-family: Arial, sans-serif; margin: 0; background: #f6f8fb; color: #222; }
++.container { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
++.card { background: #fff; border: 1px solid #e4e7ec; border-radius: 8px; padding: 1rem; }
++.nav-tabs { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
++.nav-tabs a { text-decoration: none; padding: 0.4rem 0.75rem; border: 1px solid #ccc; border-radius: 6px; color: #222; }
++.nav-tabs a.active { background: #0d6efd; color: #fff; border-color: #0d6efd; }
++.form-grid { display: grid; gap: 0.75rem; }
++.form-grid input, .form-grid select, button { padding: 0.5rem; border: 1px solid #bbb; border-radius: 6px; }
++.button-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
++.success { color: #0d7a35; }
++.error { color: #c51616; }
++label { display: block; }
++fieldset { border: 1px solid #ccc; border-radius: 6px; margin-bottom: 1rem; }
+diff --git a/frontend/src/types/auth.ts b/frontend/src/types/auth.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..c38bf5447deccc94f5280f6345072693a966242e
+--- /dev/null
++++ b/frontend/src/types/auth.ts
+@@ -0,0 +1,30 @@
++export type RegisterBaseRequest = {
++  firstName: string;
++  middleName?: string;
++  surname?: string;
++  gender?: 'MALE' | 'FEMALE' | 'NOT_PREFERRED';
++  email: string;
++  nationality: string;
++  countryCode: string;
++  mobileNumber: string;
++  stateName: string;
++  cityName: string;
++  idProofType: 'AADHAR_CARD' | 'VOTER_ID' | 'PASSPORT';
++  idProofValue: string;
++  username: string;
++  password: string;
++  confirmPassword: string;
++};
++
++export type RegisterUserRequest = RegisterBaseRequest & { homeAddress?: string };
++
++export type RegisterEmployeeRequest = RegisterBaseRequest & {
++  permanentAddress: string;
++  currentAddress: string;
++  skill: 'Cleaning' | 'Management';
++};
++
++export type RegisterOwnerRequest = RegisterBaseRequest & {
++  permanentAddress: string;
++  currentAddress: string;
++};
+diff --git a/frontend/src/utils/formUtils.ts b/frontend/src/utils/formUtils.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..2ef755c0b0253a3f21f73f09e9fd329645a3bf37
+--- /dev/null
++++ b/frontend/src/utils/formUtils.ts
+@@ -0,0 +1,6 @@
++export const PASSWORD_RULE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8}$/;
++
++export function suggestUsername(firstName: string, surname: string): string {
++  const raw = `${firstName}${surname}`.replace(/[^A-Za-z0-9]/g, '');
++  return raw.slice(0, 10);
++}
+diff --git a/frontend/tsconfig.json b/frontend/tsconfig.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..5fd820a586a2765fcb8fcad95f5c45210bd4dfa7
+--- /dev/null
++++ b/frontend/tsconfig.json
+@@ -0,0 +1,15 @@
++{
++  "compilerOptions": {
++    "target": "ES2020",
++    "lib": ["ES2020", "DOM", "DOM.Iterable"],
++    "module": "ESNext",
++    "moduleResolution": "Bundler",
++    "resolveJsonModule": true,
++    "isolatedModules": true,
++    "jsx": "react-jsx",
++    "strict": true,
++    "noEmit": true,
++    "types": ["vite/client"]
++  },
++  "include": ["src"]
++}
+diff --git a/frontend/tsconfig.node.json b/frontend/tsconfig.node.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..16dfedc6a6ffc6183d7d74dfd920d7f963ce79a8
+--- /dev/null
++++ b/frontend/tsconfig.node.json
+@@ -0,0 +1,9 @@
++{
++  "compilerOptions": {
++    "composite": true,
++    "module": "ESNext",
++    "moduleResolution": "Bundler",
++    "allowSyntheticDefaultImports": true
++  },
++  "include": ["vite.config.ts"]
++}
+diff --git a/frontend/vite.config.ts b/frontend/vite.config.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..efe63354e90b5e9c572d6ca72bd4cea66791fae1
+--- /dev/null
++++ b/frontend/vite.config.ts
+@@ -0,0 +1,9 @@
++import { defineConfig } from 'vite';
++import react from '@vitejs/plugin-react';
++
++export default defineConfig({
++  plugins: [react()],
++  server: {
++    port: 5173
++  }
++});
+ 
+EOF
+)
