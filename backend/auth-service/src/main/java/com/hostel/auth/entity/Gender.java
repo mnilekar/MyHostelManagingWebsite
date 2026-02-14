@@ -3,9 +3,9 @@ package com.hostel.auth.entity;
 import com.fasterxml.jackson.annotation.JsonCreator;
 
 public enum Gender {
-    MALE("Male"),
-    FEMALE("Female"),
-    NOT_PREFERRED("NotPreferred");
+    MALE("MALE"),
+    FEMALE("FEMALE"),
+    NOT_PREFERRED("NOT_PREFERRED");
 
     private final String dbValue;
 

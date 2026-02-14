@@ -25,7 +25,7 @@ public class AppUser {
     @Column(name = "SURNAME", length = 50)
     private String surname;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = GenderConverter.class)
     @Column(name = "GENDER", nullable = false, length = 20)
     private Gender gender;
 
