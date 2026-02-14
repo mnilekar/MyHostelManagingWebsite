@@ -4,6 +4,7 @@ import PageLayout from '../components/PageLayout';
 import { LOCATION_DATA } from '../constants/locationData';
 import { registerUser } from '../api/authApi';
 import { PASSWORD_RULE, suggestUsername } from '../utils/formUtils';
+import type { Gender } from '../types/auth';
 
 const defaultNationality = 'India';
 const defaultState = 'Maharashtra';
@@ -15,6 +16,7 @@ export default function RegisterUserPage() {
     firstName: '',
     middleName: '',
     surname: '',
+    gender: 'MALE',
     email: '',
     nationality: defaultNationality,
     mobileNumber: '',
@@ -38,7 +40,7 @@ export default function RegisterUserPage() {
 
   const applyDefaults = () => {
     setForm({
-      firstName: '', middleName: '', surname: '', email: '', nationality: defaultNationality, mobileNumber: '',
+      firstName: '', middleName: '', surname: '', gender: 'MALE', email: '', nationality: defaultNationality, mobileNumber: '',
       stateName: defaultState, cityName: defaultCity, idProofType: 'AADHAR_CARD', idProofValue: '', username: '',
       password: '', confirmPassword: ''
     });
@@ -57,6 +59,7 @@ export default function RegisterUserPage() {
         firstName: form.firstName,
         middleName: form.middleName,
         surname: form.surname,
+        gender: form.gender as Gender,
         email: form.email,
         nationality: form.nationality,
         countryCode,
@@ -82,6 +85,11 @@ export default function RegisterUserPage() {
       <form onSubmit={submit} className="form-grid">
         <input placeholder="Name" required value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
         <input placeholder="Surname" value={form.surname} onChange={(e) => setForm({ ...form, surname: e.target.value })} />
+        <select value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value as Gender })}>
+          <option value="MALE">Male</option>
+          <option value="FEMALE">Female</option>
+          <option value="NOT_PREFERRED">Not Preferred</option>
+        </select>
         <input type="email" placeholder="Email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
         <select value={form.nationality} onChange={(e) => setForm({ ...form, nationality: e.target.value, stateName: defaultState, cityName: defaultCity })}>
           {Object.keys(LOCATION_DATA).map((c) => <option key={c}>{c}</option>)}

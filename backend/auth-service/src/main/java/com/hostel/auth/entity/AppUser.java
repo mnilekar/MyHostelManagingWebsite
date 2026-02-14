@@ -26,7 +26,7 @@ public class AppUser {
     private String surname;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "GENDER", length = 20)
+    @Column(name = "GENDER", nullable = false, length = 20)
     private Gender gender;
 
     @Column(name = "EMAIL", nullable = false, unique = true, length = 120)

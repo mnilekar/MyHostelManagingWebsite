@@ -1,8 +1,10 @@
+export type Gender = 'MALE' | 'FEMALE' | 'NOT_PREFERRED';
+
 export type RegisterBaseRequest = {
   firstName: string;
   middleName?: string;
   surname?: string;
-  gender?: 'MALE' | 'FEMALE' | 'NOT_PREFERRED';
+  gender?: Gender;
   email: string;
   nationality: string;
   countryCode: string;
