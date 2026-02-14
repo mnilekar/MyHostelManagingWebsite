@@ -47,7 +47,7 @@ public class AppUser {
     @Column(name = "CITY_NAME", nullable = false, length = 50)
     private String cityName;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = IdProofTypeConverter.class)
     @Column(name = "ID_PROOF_TYPE", nullable = false, length = 20)
     private IdProofType idProofType;
 
