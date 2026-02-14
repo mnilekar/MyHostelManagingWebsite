@@ -20,6 +20,7 @@ public class BaseRegistrationRequest {
     @Size(max = 50)
     private String surname;
 
+    @NotNull
     private Gender gender;
 
     @NotBlank

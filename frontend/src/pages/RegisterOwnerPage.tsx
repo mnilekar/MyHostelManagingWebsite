@@ -4,6 +4,7 @@ import PageLayout from '../components/PageLayout';
 import { LOCATION_DATA } from '../constants/locationData';
 import { registerOwner } from '../api/authApi';
 import { PASSWORD_RULE, suggestUsername } from '../utils/formUtils';
+import type { Gender } from '../types/auth';
 
 export default function RegisterOwnerPage() {
   const navigate = useNavigate();
@@ -37,7 +38,9 @@ export default function RegisterOwnerPage() {
     try {
       const response = await registerOwner({
         ...form,
+        gender: form.gender as Gender,
         countryCode: LOCATION_DATA.India.countryCode,
+        idProofType: form.idProofType as "AADHAR_CARD" | "VOTER_ID" | "PASSPORT",
         username: form.username || usernameSuggestion,
         currentAddress: sameAddress ? form.permanentAddress : form.currentAddress,
         idProofValue: form.idProofValue.replace(/\D/g, '')
@@ -56,7 +59,7 @@ export default function RegisterOwnerPage() {
         <input placeholder="Middle name" value={form.middleName} onChange={(e) => setForm({ ...form, middleName: e.target.value })} />
         <input placeholder="Surname" value={form.surname} onChange={(e) => setForm({ ...form, surname: e.target.value })} />
         <input type="email" required placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-        <select value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}><option value="MALE">Male</option><option value="FEMALE">Female</option><option value="NOT_PREFERRED">NotPreferred</option></select>
+        <select value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value as Gender })}><option value="MALE">Male</option><option value="FEMALE">Female</option><option value="NOT_PREFERRED">NotPreferred</option></select>
         <input value={LOCATION_DATA.India.countryCode} readOnly />
         <input required placeholder="Mobile" value={form.mobileNumber} onChange={(e) => setForm({ ...form, mobileNumber: e.target.value })} />
         <input value="Maharashtra" readOnly />

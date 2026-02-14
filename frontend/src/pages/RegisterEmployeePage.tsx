@@ -4,6 +4,7 @@ import PageLayout from '../components/PageLayout';
 import { LOCATION_DATA } from '../constants/locationData';
 import { registerEmployee } from '../api/authApi';
 import { PASSWORD_RULE, suggestUsername } from '../utils/formUtils';
+import type { Gender } from '../types/auth';
 
 export default function RegisterEmployeePage() {
   const navigate = useNavigate();
@@ -40,7 +41,10 @@ export default function RegisterEmployeePage() {
     try {
       const response = await registerEmployee({
         ...form,
+        gender: form.gender as Gender,
         countryCode,
+        idProofType: form.idProofType as "AADHAR_CARD" | "VOTER_ID" | "PASSPORT",
+        skill: form.skill as "Cleaning" | "Management",
         username: form.username || usernameSuggestion,
         currentAddress: sameAddress ? form.permanentAddress : form.currentAddress,
         idProofValue: form.idProofValue.replace(/\D/g, '')
@@ -61,7 +65,7 @@ export default function RegisterEmployeePage() {
         <div>
           Gender:
           {['MALE', 'FEMALE', 'NOT_PREFERRED'].map((g) => (
-            <label key={g}><input type="radio" name="gender" checked={form.gender === g} onChange={() => setForm({ ...form, gender: g })} />{g}</label>
+            <label key={g}><input type="radio" name="gender" checked={form.gender === g} onChange={() => setForm({ ...form, gender: g as Gender })} />{g}</label>
           ))}
         </div>
         <input type="email" required placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
