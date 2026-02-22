@@ -25,4 +25,16 @@ public class HostelFacilityMap {
         this.facility = facility;
         this.id = new HostelFacilityMapId(hostel.getHostelId(), facility.getFacilityId());
     }
+
+    public HostelFacilityMapId getId() {
+        return id;
+    }
+
+    public Hostel getHostel() {
+        return hostel;
+    }
+
+    public FacilityMaster getFacility() {
+        return facility;
+    }
 }
