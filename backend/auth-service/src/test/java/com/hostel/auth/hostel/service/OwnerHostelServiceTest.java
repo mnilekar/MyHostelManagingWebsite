@@ -12,6 +12,7 @@ import com.hostel.auth.hostel.dto.HostelDtos.HostelUpsertRequest;
 import com.hostel.auth.hostel.entity.*;
 import com.hostel.auth.hostel.repository.*;
 import com.hostel.auth.repository.AppUserRepository;
+import jakarta.persistence.EntityManager;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,12 +29,12 @@ class OwnerHostelServiceTest {
     @Mock private HostelFacilityMapRepository facilityMapRepository;
     @Mock private FacilityMasterRepository facilityMasterRepository;
     @Mock private AppUserRepository appUserRepository;
-
+    @Mock private EntityManager entityManager;
     private OwnerHostelService service;
 
     @BeforeEach
     void setUp() {
-        service = new OwnerHostelService(hostelRepository, floorPlanRepository, facilityMapRepository, facilityMasterRepository, appUserRepository);
+        service = new OwnerHostelService(hostelRepository, floorPlanRepository, facilityMapRepository, facilityMasterRepository, appUserRepository, entityManager);
     }
 
     @Test
