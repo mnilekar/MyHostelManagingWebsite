@@ -18,12 +18,21 @@ export default function OwnerHostelsPage() {
     setHostels(data);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
-  return <div className="owner-page"><h1>My Hostels</h1><div className="hostel-grid">
-    <button className="create-card" onClick={() => navigate('/owner/hostels/new')}>＋<span>Create Hostel</span></button>
-    {hostels.map(h => <HostelCard key={h.hostelId} hostel={h} onEdit={() => navigate(`/owner/hostels/${h.hostelId}/edit`)} onDelete={() => setDeleteId(h.hostelId)} />)}
-  </div>
-  <ConfirmModal open={deleteId!==null} title="Do you want to delete this hostel?" description="Once you delete, all details will be deleted." onCancel={() => setDeleteId(null)} onConfirm={async () => { if (deleteId) await ownerHostelApi.deleteHostel(deleteId); setDeleteId(null); await load(); }} />
+  return <div className="owner-page">
+    <div className="owner-page-header">
+      <button type="button" className="secondary" onClick={() => navigate('/owner/dashboard')} aria-label="Back to Dashboard">
+        ← Back to Dashboard
+      </button>
+      <h1>My Hostels</h1>
+    </div>
+    <div className="hostel-grid">
+      <button className="create-card" onClick={() => navigate('/owner/hostels/new')}>＋<span>Create Hostel</span></button>
+      {hostels.map(h => <HostelCard key={h.hostelId} hostel={h} onEdit={() => navigate(`/owner/hostels/${h.hostelId}/edit`)} onDelete={() => setDeleteId(h.hostelId)} />)}
+    </div>
+    <ConfirmModal open={deleteId !== null} title="Do you want to delete this hostel?" description="Once you delete, all details will be deleted." onCancel={() => setDeleteId(null)} onConfirm={async () => { if (deleteId) await ownerHostelApi.deleteHostel(deleteId); setDeleteId(null); await load(); }} />
   </div>;
 }

@@ -53,3 +53,6 @@ input,textarea{width:100%;background:#0f172b;color:#dbe7ff;border:1px solid #2a3
 .chip button{padding:0 .3rem;margin-left:.3rem}
 .suggestions{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.4rem}
 .counter{font-size:.8rem;text-align:right;margin-top:.3rem;color:#8ea0c2}
+
+.owner-page-header{display:flex;align-items:center;gap:1rem;margin-bottom:1rem}
+.owner-page-header h1{margin:0;color:#dbe7ff}

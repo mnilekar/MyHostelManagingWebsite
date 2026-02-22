@@ -29,10 +29,16 @@ public class OwnerHostelController {
         return ownerHostelService.listByOwner(owner.userId());
     }
 
-    @GetMapping("/hostels/{id}")
-    public HostelDetailResponse getHostel(@RequestHeader("Authorization") String authHeader, @PathVariable Long id) {
+    @GetMapping("/hostels/exists")
+    public HostelsExistenceResponse hostelsExist(@RequestHeader("Authorization") String authHeader) {
         OwnerAuthContext owner = ownerAuthService.requireOwner(authHeader);
-        return ownerHostelService.getDetail(owner.userId(), id);
+        return new HostelsExistenceResponse(ownerHostelService.ownerHasHostels(owner.userId()));
+    }
+
+    @GetMapping("/hostels/{id}")
+    public HostelDetailResponse getHostel(@RequestHeader("Authorization") String authHeader, @PathVariable("id") Long hostelId) {
+        OwnerAuthContext owner = ownerAuthService.requireOwner(authHeader);
+        return ownerHostelService.getDetail(owner.userId(), hostelId);
     }
 
     @PostMapping("/hostels")
@@ -44,16 +50,17 @@ public class OwnerHostelController {
 
     @PutMapping("/hostels/{id}")
     public HostelDetailResponse updateHostel(@RequestHeader("Authorization") String authHeader,
-                                             @PathVariable Long id,
+                                             @PathVariable("id") Long hostelId,
                                              @Valid @RequestBody HostelUpsertRequest request) {
         OwnerAuthContext owner = ownerAuthService.requireOwner(authHeader);
-        return ownerHostelService.update(owner.userId(), id, request);
+        return ownerHostelService.update(owner.userId(), hostelId, request);
     }
 
     @DeleteMapping("/hostels/{id}")
-    public ResponseEntity<Void> deleteHostel(@RequestHeader("Authorization") String authHeader, @PathVariable Long id) {
+    public ResponseEntity<Void> deleteHostel(@RequestHeader("Authorization") String authHeader,
+                                             @PathVariable("id") Long hostelId) {
         OwnerAuthContext owner = ownerAuthService.requireOwner(authHeader);
-        ownerHostelService.delete(owner.userId(), id);
+        ownerHostelService.delete(owner.userId(), hostelId);
         return ResponseEntity.noContent().build();
     }
 
