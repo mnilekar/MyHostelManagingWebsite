@@ -9,6 +9,8 @@ import DashboardPage from './pages/DashboardPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import OwnerRoute from './components/OwnerRoute';
 import OwnerDashboardPage from './pages/OwnerDashboardPage';
+import OwnerHostelsPage from './pages/OwnerHostelsPage';
+import HostelWizard from './pages/HostelWizard';
 
 export default function App() {
   return (
@@ -26,6 +28,9 @@ export default function App() {
 
       <Route element={<OwnerRoute />}>
         <Route path="/owner/dashboard" element={<OwnerDashboardPage />} />
+        <Route path="/owner/hostels" element={<OwnerHostelsPage />} />
+        <Route path="/owner/hostels/new" element={<HostelWizard />} />
+        <Route path="/owner/hostels/:id/edit" element={<HostelWizard />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
