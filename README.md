@@ -27,7 +27,9 @@ Production-ready starter template for a **Hostel Room Management** platform with
   - Register As Employee
   - Register Your Hostel (Owner)
 - Role-specific registration forms with required defaults, field behavior, password policy, and success redirect.
-- Login page and placeholder dashboard with logout.
+- Login page with role-based post-login routing.
+- OWNER users land on `/owner/dashboard` (owner-only page with profile hover card, right-side tabs, and logout).
+- USER/EMPLOYEE continue to use the placeholder `/dashboard` with logout.
 - Backend REST APIs for registration and login.
 - Backend validation, password hashing (BCrypt), and username/email uniqueness.
 
@@ -73,7 +75,7 @@ Service starts at `http://localhost:8080`.
 - `POST /api/auth/register/user`
 - `POST /api/auth/register/employee`
 - `POST /api/auth/register/owner`
-- `POST /api/auth/login`
+- `POST /api/auth/login` (returns token + user details including role)
 
 ### Sample curl requests
 

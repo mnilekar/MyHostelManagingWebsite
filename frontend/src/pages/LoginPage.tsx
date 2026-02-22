@@ -2,6 +2,7 @@ import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageLayout from '../components/PageLayout';
 import { login } from '../api/authApi';
+import { saveAuthSession } from '../utils/authStorage';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -14,8 +15,8 @@ export default function LoginPage() {
     setError('');
     try {
       const response = await login({ username, password });
-      sessionStorage.setItem('authToken', response.token);
-      navigate('/dashboard');
+      saveAuthSession(response.token, response.user);
+      navigate(response.user.role === 'OWNER' ? '/owner/dashboard' : '/dashboard');
     } catch (err) {
       setError((err as Error).message);
     }
