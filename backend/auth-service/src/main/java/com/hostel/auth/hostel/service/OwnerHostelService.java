@@ -7,6 +7,7 @@ import com.hostel.auth.hostel.dto.HostelDtos.*;
 import com.hostel.auth.hostel.entity.*;
 import com.hostel.auth.hostel.repository.*;
 import com.hostel.auth.repository.AppUserRepository;
+import jakarta.persistence.EntityManager;
 import java.util.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,15 +20,17 @@ public class OwnerHostelService {
     private final HostelFacilityMapRepository facilityMapRepository;
     private final FacilityMasterRepository facilityMasterRepository;
     private final AppUserRepository appUserRepository;
+    private final EntityManager entityManager;
 
     public OwnerHostelService(HostelRepository hostelRepository, HostelFloorPlanRepository floorPlanRepository,
                               HostelFacilityMapRepository facilityMapRepository, FacilityMasterRepository facilityMasterRepository,
-                              AppUserRepository appUserRepository) {
+                              AppUserRepository appUserRepository, EntityManager entityManager) {
         this.hostelRepository = hostelRepository;
         this.floorPlanRepository = floorPlanRepository;
         this.facilityMapRepository = facilityMapRepository;
         this.facilityMasterRepository = facilityMasterRepository;
         this.appUserRepository = appUserRepository;
+        this.entityManager = entityManager;
     }
 
     public boolean ownerHasHostels(Long ownerUserId) {
@@ -69,6 +72,7 @@ public class OwnerHostelService {
         Hostel saved = hostelRepository.save(hostel);
         floorPlanRepository.deleteByHostelHostelId(hostelId);
         facilityMapRepository.deleteByHostelHostelId(hostelId);
+        entityManager.flush();
         replaceFloorPlans(saved, request.floorRooms());
         replaceFacilities(saved, request.facilityIds());
         return mapDetail(saved);
