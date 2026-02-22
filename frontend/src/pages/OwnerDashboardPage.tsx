@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PopupMessage from '../components/PopupMessage';
+import { ownerHostelApi } from '../api/ownerHostelApi';
 import { clearAuthSession, getAuthUser } from '../utils/authStorage';
 
 const ownerTabs = ['Create Hostel', 'My Employees', 'My'] as const;
@@ -11,6 +12,7 @@ export default function OwnerDashboardPage() {
   const [activeTab, setActiveTab] = useState<(typeof ownerTabs)[number]>('Create Hostel');
   const [popupMessage, setPopupMessage] = useState('');
   const [showUserTooltip, setShowUserTooltip] = useState(false);
+  const [isCheckingHostels, setIsCheckingHostels] = useState(false);
 
   const initials = user?.name
     .split(' ')
@@ -19,6 +21,18 @@ export default function OwnerDashboardPage() {
     .join('')
     .slice(0, 2)
     .toUpperCase() || 'U';
+
+  const handleCreateHostelClick = async () => {
+    setIsCheckingHostels(true);
+    try {
+      const { exists } = await ownerHostelApi.hostelsExist();
+      navigate(exists ? '/owner/hostels' : '/owner/hostels/new');
+    } catch {
+      setPopupMessage('Unable to load hostels right now. Please try again.');
+    } finally {
+      setIsCheckingHostels(false);
+    }
+  };
 
   return (
     <main className="owner-dashboard">
@@ -66,17 +80,18 @@ export default function OwnerDashboardPage() {
             type="button"
             key={tab}
             className={activeTab === tab ? 'owner-tab active' : 'owner-tab'}
+            disabled={tab === 'Create Hostel' && isCheckingHostels}
             onClick={() => {
               setActiveTab(tab);
               if (tab === 'Create Hostel') {
-                navigate('/owner/hostels/new');
+                handleCreateHostelClick();
                 return;
               }
 
               setPopupMessage('Work in progress');
             }}
           >
-            {tab}
+            {tab === 'Create Hostel' && isCheckingHostels ? 'Checking...' : tab}
           </button>
         ))}
       </aside>

@@ -30,6 +30,10 @@ public class OwnerHostelService {
         this.appUserRepository = appUserRepository;
     }
 
+    public boolean ownerHasHostels(Long ownerUserId) {
+        return hostelRepository.existsByOwnerUserId(ownerUserId);
+    }
+
     public List<HostelSummaryResponse> listByOwner(Long ownerUserId) {
         return hostelRepository.findByOwnerUserIdOrderByUpdatedAtDesc(ownerUserId).stream()
             .map(h -> new HostelSummaryResponse(h.getHostelId(), h.getHostelName(), h.getCityName(), h.getStateName(),

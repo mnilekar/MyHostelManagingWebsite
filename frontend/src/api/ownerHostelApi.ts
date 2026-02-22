@@ -11,6 +11,7 @@ export interface HostelPayload {
 }
 export interface HostelDetail extends Omit<HostelPayload, 'floorRooms'> { hostelId: number; floorRooms: Array<{ floorNumber: number; roomsCount: number }>; }
 export interface Facility { facilityId: number; facilityName: string; }
+export interface HostelExistence { exists: boolean; }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const token = getToken();
@@ -32,6 +33,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const ownerHostelApi = {
   listHostels: () => request<HostelSummary[]>('/api/owner/hostels'),
+  hostelsExist: () => request<HostelExistence>('/api/owner/hostels/exists'),
   getHostel: (id: number) => request<HostelDetail>(`/api/owner/hostels/${id}`),
   createHostel: (payload: HostelPayload) => request<HostelDetail>('/api/owner/hostels', { method: 'POST', body: JSON.stringify(payload) }),
   updateHostel: (id: number, payload: HostelPayload) => request<HostelDetail>(`/api/owner/hostels/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),

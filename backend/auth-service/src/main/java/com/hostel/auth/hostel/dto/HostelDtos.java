@@ -32,6 +32,8 @@ public class HostelDtos {
 
     public record FacilityResponse(Long facilityId, String facilityName) {}
 
+    public record HostelsExistenceResponse(boolean exists) {}
+
     public record HostelDetailResponse(
         Long hostelId,
         String hostelName,
