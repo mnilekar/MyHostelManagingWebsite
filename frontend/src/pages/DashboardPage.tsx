@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import PageLayout from '../components/PageLayout';
+import { clearAuthSession } from '../utils/authStorage';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -10,7 +11,7 @@ export default function DashboardPage() {
       <button
         type="button"
         onClick={() => {
-          sessionStorage.removeItem('authToken');
+          clearAuthSession();
           navigate('/');
         }}
       >

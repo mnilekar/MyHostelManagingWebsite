@@ -97,7 +97,24 @@ public class AuthService {
 
         String rawToken = user.getUsername() + ":" + user.getRole().name() + ":" + UUID.randomUUID();
         String token = Base64.getEncoder().encodeToString(rawToken.getBytes(StandardCharsets.UTF_8));
-        return new AuthResponse("Login successful", token);
+        AuthResponse.AuthUserDto userDto = new AuthResponse.AuthUserDto(
+            buildDisplayName(user),
+            user.getUsername(),
+            user.getEmail(),
+            user.getRole().name()
+        );
+        return new AuthResponse("Login successful", token, userDto);
+    }
+
+    private String buildDisplayName(AppUser user) {
+        StringBuilder name = new StringBuilder(user.getFirstName());
+        if (user.getMiddleName() != null && !user.getMiddleName().isBlank()) {
+            name.append(" ").append(user.getMiddleName().trim());
+        }
+        if (user.getSurname() != null && !user.getSurname().isBlank()) {
+            name.append(" ").append(user.getSurname().trim());
+        }
+        return name.toString();
     }
 
     private AppUser baseUser(BaseRegistrationRequest request, UserRole role) {

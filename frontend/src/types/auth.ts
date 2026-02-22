@@ -1,4 +1,18 @@
 export type Gender = 'MALE' | 'FEMALE' | 'NOT_PREFERRED';
+export type UserRole = 'USER' | 'EMPLOYEE' | 'OWNER';
+
+export type AuthUser = {
+  name: string;
+  username: string;
+  email: string;
+  role: UserRole;
+};
+
+export type LoginResponse = {
+  message: string;
+  token: string;
+  user: AuthUser;
+};
 
 export type RegisterBaseRequest = {
   firstName: string;

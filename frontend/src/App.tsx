@@ -6,6 +6,9 @@ import RegisterEmployeePage from './pages/RegisterEmployeePage';
 import RegisterOwnerPage from './pages/RegisterOwnerPage';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
+import ProtectedRoute from './components/ProtectedRoute';
+import OwnerRoute from './components/OwnerRoute';
+import OwnerDashboardPage from './pages/OwnerDashboardPage';
 
 export default function App() {
   return (
@@ -16,7 +19,15 @@ export default function App() {
       <Route path="/register/employee" element={<RegisterEmployeePage />} />
       <Route path="/register/owner" element={<RegisterOwnerPage />} />
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/dashboard" element={<DashboardPage />} />
+
+      <Route element={<ProtectedRoute />}>
+        <Route path="/dashboard" element={<DashboardPage />} />
+      </Route>
+
+      <Route element={<OwnerRoute />}>
+        <Route path="/owner/dashboard" element={<OwnerDashboardPage />} />
+      </Route>
+
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
