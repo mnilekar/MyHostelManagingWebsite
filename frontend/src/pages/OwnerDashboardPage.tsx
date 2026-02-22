@@ -68,6 +68,11 @@ export default function OwnerDashboardPage() {
             className={activeTab === tab ? 'owner-tab active' : 'owner-tab'}
             onClick={() => {
               setActiveTab(tab);
+              if (tab === 'Create Hostel') {
+                navigate('/owner/hostels/new');
+                return;
+              }
+
               setPopupMessage('Work in progress');
             }}
           >
