@@ -15,7 +15,7 @@ public class FacilityMaster {
     @Column(name = "FACILITY_NAME", nullable = false, length = 60)
     private String facilityName;
 
-    @Column(name = "IS_ACTIVE", nullable = false, length = 1)
+    @Column(name = "IS_ACTIVE", nullable = false, columnDefinition = "CHAR(1)")
     private String isActive;
 
     @Column(name = "CREATED_AT", nullable = false)
